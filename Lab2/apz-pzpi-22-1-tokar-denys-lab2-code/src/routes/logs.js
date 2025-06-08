@@ -1,92 +1,104 @@
 const express = require('express');
 const router = express.Router();
 const Log = require('../models/Log');
+const Greenhouse = require('../models/AutoGreenhouse');
+const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
+const mongoose = require('mongoose');
 
-// GET all logs
-router.get('/', async (req, res) => {
+async function getLogMiddleware(req, res, next) {
+    let logEntry;
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid log ID format' });
+        }
+        logEntry = await Log.findById(req.params.id).populate({
+            path: 'greenhouseId',
+            select: 'name ownerId'
+        });
+        if (!logEntry) return res.status(404).json({ message: 'Cannot find log entry' });
+
+        if (req.user.role !== 'admin' && logEntry.greenhouseId.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'User not authorized to access this log' });
+        }
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+    req.logEntry = logEntry;
+    next();
+}
+
+router.get('/', protect, async (req, res) => {
   try {
-    const logs = await Log.find();
+    let query = {};
+    if (req.user.role !== 'admin') {
+        const userGreenhouses = await Greenhouse.find({ ownerId: req.user.id }).select('_id');
+        const greenhouseIds = userGreenhouses.map(gh => gh._id);
+        query.greenhouseId = { $in: greenhouseIds };
+    }
+    const logs = await Log.find(query).populate('greenhouseId', 'name').populate('userId', 'username').sort({timestamp: -1});
     res.json(logs);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET logs by greenhouse ID
-router.get('/greenhouse/:greenhouseId', async (req, res) => {
-  try {
-    const logs = await Log.find({ greenhouseId: req.params.greenhouseId });
-    res.json(logs);
-  } catch (err) {
-      res.status(500).json({ message: err.message });
+router.get('/greenhouse/:greenhouseId', protect, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.greenhouseId)) {
+            return res.status(400).json({ message: 'Invalid greenhouse ID format' });
+        }
+        const greenhouse = await Greenhouse.findById(req.params.greenhouseId);
+        if (!greenhouse) return res.status(404).json({ message: "Greenhouse not found for logs" });
+
+        if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: "User not authorized to view logs for this greenhouse" });
+        }
+        const logs = await Log.find({ greenhouseId: req.params.greenhouseId }).populate('userId', 'username').sort({timestamp: -1});
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 
-// GET one log
-router.get('/:id', getLog, (req, res) => {
-  res.json(res.log);
-});
+router.post('/', protect, authorizeAdmin, async (req, res) => { // Тільки адмін може створювати логи напряму (зазвичай вони створюються системою)
+    const { greenhouseId, type, message, timestamp, userId } = req.body;
+    if(!greenhouseId || !message) return res.status(400).json({message: "GreenhouseId and message are required"});
 
-// POST a new log
-router.post('/', async (req, res) => {
-    const newLog = new Log({
-        greenhouseId: req.body.greenhouseId,
-        type: req.body.type, // ['error', 'info']
-        message: req.body.message,
-      timestamp: req.body.timestamp ? new Date(req.body.timestamp) : new Date()
-  });
+    const newLog = new Log({ greenhouseId, type, message, timestamp: timestamp ? new Date(timestamp) : new Date(), userId });
     try {
       const savedLog = await newLog.save();
-        res.status(201).json(savedLog);
+      res.status(201).json(savedLog);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
 });
 
-// PATCH an existing log
-router.patch('/:id', getLog, async (req, res) => {
-  if (req.body.greenhouseId != null) {
-    res.log.greenhouseId = req.body.greenhouseId;
-  }
-  if (req.body.type != null) {
-    res.log.type = req.body.type;
-  }
-  if (req.body.message != null) {
-    res.log.message = req.body.message;
-  }
-  if (req.body.timestamp != null) {
-     res.log.timestamp = new Date(req.body.timestamp);
-  }
+router.get('/:id', protect, getLogMiddleware, (req, res) => {
+  res.json(req.logEntry);
+});
+
+router.patch('/:id', protect, getLogMiddleware, authorizeAdmin, async (req, res) => { // Тільки адмін
+  const updatableFields = ['type', 'message', 'timestamp', 'userId'];
+  updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) req.logEntry[field] = req.body[field];
+  });
+  if (req.body.greenhouseId) req.logEntry.greenhouseId = req.body.greenhouseId;
+
   try {
-    const updatedLog = await res.log.save();
-      res.json(updatedLog);
+    const updatedLog = await req.logEntry.save();
+    res.json(updatedLog);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE a log
-router.delete('/:id', getLog, async (req, res) => {
+router.delete('/:id', protect, getLogMiddleware, authorizeAdmin, async (req, res) => { // Тільки адмін
   try {
-    await res.log.deleteOne();
+    await req.logEntry.deleteOne();
     res.json({ message: 'Deleted Log' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
-async function getLog(req, res, next) {
-  let log;
-  try {
-      log = await Log.findById(req.params.id);
-      if (!log) {
-        return res.status(404).json({ message: 'Cannot find log' });
-      }
-    } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-  res.log = log;
-  next();
-}
 
 module.exports = router;

@@ -1,104 +1,124 @@
 const express = require('express');
 const router = express.Router();
 const Sensor = require('../models/Sensor');
+const Greenhouse = require('../models/AutoGreenhouse');
+const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
+const mongoose = require('mongoose');
 
-// GET all sensors
-router.get('/', async (req, res) => {
+async function getSensorMiddleware(req, res, next) {
+    let sensor;
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid sensor ID format' });
+        }
+        sensor = await Sensor.findById(req.params.id).populate({
+            path: 'greenhouseId',
+            select: 'name ownerId'
+        });
+        if (!sensor) return res.status(404).json({ message: 'Cannot find sensor' });
+
+        if (req.user.role !== 'admin' && sensor.greenhouseId.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'User not authorized to access this sensor' });
+        }
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+    req.sensor = sensor;
+    next();
+}
+
+router.get('/', protect, async (req, res) => {
   try {
-    const sensors = await Sensor.find().populate('greenhouseId', 'name');
+    let query = {};
+    if (req.user.role !== 'admin') {
+        const userGreenhouses = await Greenhouse.find({ ownerId: req.user.id }).select('_id');
+        const greenhouseIds = userGreenhouses.map(gh => gh._id);
+        query.greenhouseId = { $in: greenhouseIds };
+    }
+    const sensors = await Sensor.find(query).populate('greenhouseId', 'name');
     res.json(sensors);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET all sensors of a specific greenhouse
-router.get('/greenhouse/:greenhouseId', async (req, res) => {
-  try {
-      const sensors = await Sensor.find({ greenhouseId: req.params.greenhouseId }).populate('greenhouseId', 'name');
-      res.json(sensors);
-  } catch (err) {
-      res.status(500).json({ message: err.message });
-  }
-});
-
-// GET one sensor
-router.get('/:id', getSensor, (req, res) => {
-  res.json(res.sensor);
-});
-
-// POST a new sensor
-router.post('/', async (req, res) => {
-    const sensor = new Sensor({
-        type: req.body.type, // ['temperature', 'humidity', 'light']
-        greenhouseId: req.body.greenhouseId,
-        model: req.body.model,
-        status: req.body.status, // ['active', 'inactive']
-        unit: req.body.unit,
-        lastValue: req.body.lastValue,
-        lastUpdated: req.body.lastUpdated
+router.get('/greenhouse/:greenhouseId', protect, async (req, res, next) => {
+    req.params.id = req.params.greenhouseId; // Для checkGreenhouseOwnerOrAdmin, щоб він міг знайти greenhouse
+    const tempGreenhouseForAuth = new Greenhouse({ _id: req.params.greenhouseId, ownerId: null }); 
+    req.greenhouse = tempGreenhouseForAuth; // тимчасово для middleware
+    
+    // Виклик middleware для перевірки прав на теплицю
+    checkGreenhouseOwnerOrAdmin(req, res, async () => {
+        try {
+            const sensors = await Sensor.find({ greenhouseId: req.params.greenhouseId }).populate('greenhouseId', 'name');
+            res.json(sensors);
+        } catch (err) {
+            res.status(500).json({ message: err.message });
+        }
     });
-  try {
-    const newSensor = await sensor.save();
-    res.status(201).json(newSensor);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
 });
 
-// PATCH an existing sensor
-router.patch('/:id', getSensor, async (req, res) => {
-    if (req.body.type != null) {
-        res.sensor.type = req.body.type;
+
+router.post('/', protect, async (req, res) => {
+    const { type, greenhouseId, model, status, unit, lastValue, lastUpdated } = req.body;
+    if (!type || !greenhouseId || !unit) {
+        return res.status(400).json({ message: "Sensor type, greenhouseId and unit are required" });
     }
-    if (req.body.greenhouseId != null) {
-        res.sensor.greenhouseId = req.body.greenhouseId;
+    try {
+        const greenhouse = await Greenhouse.findById(greenhouseId);
+        if (!greenhouse) return res.status(404).json({ message: "Greenhouse not found" });
+        if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: "User not authorized to add sensor to this greenhouse" });
+        }
+        const sensor = new Sensor({ type, greenhouseId, model, status, unit, lastValue, lastUpdated });
+        const newSensor = await sensor.save();
+        res.status(201).json(newSensor);
+    } catch (err) {
+        if (err.name === 'ValidationError') {
+            let errors = {}; Object.keys(err.errors).forEach(key => errors[key] = err.errors[key].message);
+            return res.status(400).json({ message: "Validation Error", errors });
+        }
+        res.status(400).json({ message: err.message });
     }
-    if (req.body.model != null) {
-        res.sensor.model = req.body.model;
+});
+
+router.get('/:id', protect, getSensorMiddleware, (req, res) => {
+  res.json(req.sensor);
+});
+
+router.patch('/:id', protect, getSensorMiddleware, async (req, res) => {
+    const updatableFields = ['type', 'model', 'status', 'unit', 'lastValue', 'lastUpdated'];
+    updatableFields.forEach(field => {
+        if (req.body[field] !== undefined) req.sensor[field] = req.body[field];
+    });
+    if (req.body.greenhouseId && req.user.role === 'admin') {
+        const newGreenhouse = await Greenhouse.findById(req.body.greenhouseId);
+        if (!newGreenhouse) return res.status(404).json({message: "New greenhouse for sensor not found"});
+        req.sensor.greenhouseId = req.body.greenhouseId;
+    } else if (req.body.greenhouseId && req.user.role !== 'admin') {
+        return res.status(403).json({message: "Only admin can change sensor's greenhouse assignment."})
     }
-    if (req.body.status != null) {
-        res.sensor.status = req.body.status;
-    }
-    if (req.body.unit != null) {
-        res.sensor.unit = req.body.unit;
-    }
-    if (req.body.lastValue != null) {
-        res.sensor.lastValue = req.body.lastValue;
-    }
-    if (req.body.lastUpdated != null) {
-        res.sensor.lastUpdated = req.body.lastUpdated;
-    }
+
   try {
-    const updatedSensor = await res.sensor.save();
+    const updatedSensor = await req.sensor.save();
     res.json(updatedSensor);
   } catch (err) {
+    if (err.name === 'ValidationError') {
+        let errors = {}; Object.keys(err.errors).forEach(key => errors[key] = err.errors[key].message);
+        return res.status(400).json({ message: "Validation Error", errors });
+    }
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE a sensor
-router.delete('/:id', getSensor, async (req, res) => {
+router.delete('/:id', protect, getSensorMiddleware, async (req, res) => {
   try {
-    await res.sensor.deleteOne();
-    res.json({ message: 'Deleted Sensor' });
+    await SensorData.deleteMany({ sensorId: req.sensor._id });
+    await req.sensor.deleteOne();
+    res.json({ message: 'Deleted Sensor and its data' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-async function getSensor(req, res, next) {
-  let sensor;
-  try {
-      sensor = await Sensor.findById(req.params.id).populate('greenhouseId', 'name');
-    if (sensor == null) {
-      return res.status(404).json({ message: 'Cannot find sensor' });
-    }
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-  res.sensor = sensor;
-  next();
-}
-
 
 module.exports = router;

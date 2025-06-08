@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const sensorSchema = new Schema({
-    type: { type: String, required: true, enum: ['temperature', 'humidity', 'light'] }, 
+    type: { type: String, required: true, enum: ['temperature', 'humidity', 'light'] },
     greenhouseId: { type: Schema.Types.ObjectId, ref: 'Greenhouse', required: true },
     model: { type: String },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },

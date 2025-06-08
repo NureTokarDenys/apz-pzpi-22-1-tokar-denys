@@ -1,100 +1,116 @@
 const express = require('express');
 const router = express.Router();
 const Rule = require('../models/Rule');
+const Greenhouse = require('../models/AutoGreenhouse');
+const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
+const mongoose = require('mongoose');
 
-// GET all rules
-router.get('/', async (req, res) => {
+async function getRuleMiddleware(req, res, next) {
+    let rule;
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid rule ID format' });
+        }
+        rule = await Rule.findById(req.params.id).populate({
+            path: 'greenhouseId',
+            select: 'name ownerId'
+        });
+        if (!rule) return res.status(404).json({ message: 'Cannot find rule' });
+
+        if (req.user.role !== 'admin' && rule.greenhouseId.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'User not authorized to access this rule' });
+        }
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+    req.rule = rule;
+    next();
+}
+
+router.get('/', protect, async (req, res) => {
   try {
-    const rules = await Rule.find();
+    let query = {};
+    if (req.user.role !== 'admin') {
+        const userGreenhouses = await Greenhouse.find({ ownerId: req.user.id }).select('_id');
+        const greenhouseIds = userGreenhouses.map(gh => gh._id);
+        query.greenhouseId = { $in: greenhouseIds };
+    }
+    const rules = await Rule.find(query).populate('greenhouseId', 'name');
     res.json(rules);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET all rules of a specific greenhouse
-router.get('/greenhouse/:greenhouseId', async (req, res) => {
-  try {
-      const rules = await Rule.find({ greenhouseId: req.params.greenhouseId });
-      res.json(rules);
-  } catch (err) {
-      res.status(500).json({ message: err.message });
-  }
-});
-
-// GET one rule
-router.get('/:id', getRule, (req, res) => {
-  res.json(res.rule);
-});
-
-// POST a new rule
-router.post('/', async (req, res) => {
-    const newRule = new Rule({
-      greenhouseId: req.body.greenhouseId,
-      condition: req.body.condition, // ['time_based', 'sensor_based']
-      action: req.body.action, // ['start_fertilizing', 'stop_fertilizing', 'turn_on_light', 'turn_off_light', 'start_cooling', 'stop_cooling']
-      schedule: req.body.schedule,
-      threshold: req.body.threshold,
-      status: req.body.status // ['active', 'inactive']
-  });
+router.get('/greenhouse/:greenhouseId', protect, async (req, res) => {
     try {
-      const savedRule = await newRule.save();
+        if (!mongoose.Types.ObjectId.isValid(req.params.greenhouseId)) {
+             return res.status(400).json({ message: 'Invalid greenhouse ID format' });
+        }
+        const greenhouse = await Greenhouse.findById(req.params.greenhouseId);
+        if (!greenhouse) return res.status(404).json({ message: "Greenhouse not found for rules" });
+
+        if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: "User not authorized to view rules for this greenhouse" });
+        }
+        const rules = await Rule.find({ greenhouseId: req.params.greenhouseId });
+        res.json(rules);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+router.post('/', protect, async (req, res) => {
+    const { greenhouseId, condition, action, schedule, threshold, status } = req.body;
+    if (!greenhouseId || !condition || !action) {
+        return res.status(400).json({ message: "Greenhouse ID, condition, and action are required" });
+    }
+    try {
+        const greenhouse = await Greenhouse.findById(greenhouseId);
+        if (!greenhouse) return res.status(404).json({ message: "Greenhouse not found" });
+        if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: "User not authorized to create rule for this greenhouse" });
+        }
+        const newRule = new Rule({ greenhouseId, condition, action, schedule, threshold, status });
+        const savedRule = await newRule.save();
         res.status(201).json(savedRule);
     } catch (err) {
+        if (err.name === 'ValidationError') {
+            let errors = {}; Object.keys(err.errors).forEach(key => errors[key] = err.errors[key].message);
+            return res.status(400).json({ message: "Validation Error", errors });
+        }
         res.status(400).json({ message: err.message });
     }
 });
 
-// PATCH an existing rule
-router.patch('/:id', getRule, async (req, res) => {
-  if (req.body.greenhouseId != null) {
-    res.rule.greenhouseId = req.body.greenhouseId;
-  }
-  if (req.body.condition != null) {
-    res.rule.condition = req.body.condition;
-  }
-  if (req.body.action != null) {
-    res.rule.action = req.body.action;
-  }
-  if (req.body.schedule != null) {
-    res.rule.schedule = req.body.schedule;
-  }
-  if (req.body.threshold != null) {
-    res.rule.threshold = req.body.threshold;
-  }
-  if (req.body.status != null) {
-    res.rule.status = req.body.status;
-  }
+router.get('/:id', protect, getRuleMiddleware, (req, res) => {
+  res.json(req.rule);
+});
+
+router.patch('/:id', protect, getRuleMiddleware, async (req, res) => {
+  const updatableFields = ['condition', 'action', 'schedule', 'threshold', 'status'];
+  updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) req.rule[field] = req.body[field];
+  });
   try {
-    const updatedRule = await res.rule.save();
+    const updatedRule = await req.rule.save();
     res.json(updatedRule);
   } catch (err) {
+    if (err.name === 'ValidationError') {
+        let errors = {}; Object.keys(err.errors).forEach(key => errors[key] = err.errors[key].message);
+        return res.status(400).json({ message: "Validation Error", errors });
+    }
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE a rule
-router.delete('/:id', getRule, async (req, res) => {
+router.delete('/:id', protect, getRuleMiddleware, async (req, res) => {
   try {
-    await res.rule.deleteOne();
+    await req.rule.deleteOne();
     res.json({ message: 'Deleted Rule' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
-async function getRule(req, res, next) {
-  let rule;
-  try {
-    rule = await Rule.findById(req.params.id);
-    if (!rule) {
-      return res.status(404).json({ message: 'Cannot find rule' });
-    }
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-  res.rule = rule;
-  next();
-}
 
 module.exports = router;

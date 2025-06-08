@@ -5,20 +5,25 @@ const corsOptions = require('./src/options/corsOptions');
 const { connectDB } = require('./src/config/db');
 const routes = require('./src/routes');
 
-const app = express();
-const PORT = process.env.PORT || 5000; 
-
 dotenv.config();
 
-// CORS
+const app = express();
+const PORT = process.env.PORT || 5000;
+
 app.use(cors(corsOptions));
-
-// Json middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
 app.use('/api', routes);
+
+app.use((err, req, res, next) => {
+    console.error("Unhandled error:", err.stack);
+    res.status(500).send('Something broke on the server!');
+});
 
 connectDB().then(() => {
     app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
-  }).catch((err) => console.error(err));
+  }).catch((err) => {
+    console.error("Failed to connect to DB, server not started:", err);
+    process.exit(1);
+});
