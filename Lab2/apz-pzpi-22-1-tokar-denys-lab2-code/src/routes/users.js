@@ -21,12 +21,17 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Email already exists' });
         }
     }
-    const user = new User({
-      username,
-      password,
-      email,
-      role: (role && ['user', 'admin'].includes(role) && req.user && req.user.role === 'admin') ? role : 'user'
-    });
+    let newRole = 'user';
+    if (role && ['user', 'admin'].includes(role)) {
+        const adminExists = await User.findOne({role: 'admin'});
+        if (!adminExists) {
+            newRole = 'admin';
+        } else if (req.user && req.user.role === 'admin') {
+            newRole = role;
+        }
+    }
+
+    const user = new User({ username, password, email, role: newRole });
     const newUser = await user.save();
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, {
         expiresIn: '30d',

@@ -6,6 +6,7 @@ const sensorsRouter = require('./sensors');
 const sensorDataRouter = require('./sensorData');
 const rulesRouter = require('./rules');
 const logsRouter = require('./logs');
+const iotRouter = require('./iot');
 
 router.use('/users', usersRouter);
 router.use('/greenhouses', greenhousesRouter);
@@ -13,5 +14,6 @@ router.use('/sensors', sensorsRouter);
 router.use('/sensordata', sensorDataRouter);
 router.use('/rules', rulesRouter);
 router.use('/logs', logsRouter);
+router.use('/iot', iotRouter);
 
 module.exports = router;

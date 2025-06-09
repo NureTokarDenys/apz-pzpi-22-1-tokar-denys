@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Sensor = require('../models/Sensor');
 const Greenhouse = require('../models/AutoGreenhouse');
+const SensorData = require('../models/SensorData');
 const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
 const mongoose = require('mongoose');
 
@@ -13,7 +14,7 @@ async function getSensorMiddleware(req, res, next) {
         }
         sensor = await Sensor.findById(req.params.id).populate({
             path: 'greenhouseId',
-            select: 'name ownerId'
+            select: 'name ownerId hardwareId'
         });
         if (!sensor) return res.status(404).json({ message: 'Cannot find sensor' });
 
@@ -43,26 +44,28 @@ router.get('/', protect, async (req, res) => {
 });
 
 router.get('/greenhouse/:greenhouseId', protect, async (req, res, next) => {
-    req.params.id = req.params.greenhouseId; // Для checkGreenhouseOwnerOrAdmin, щоб він міг знайти greenhouse
-    const tempGreenhouseForAuth = new Greenhouse({ _id: req.params.greenhouseId, ownerId: null }); 
-    req.greenhouse = tempGreenhouseForAuth; // тимчасово для middleware
-    
-    // Виклик middleware для перевірки прав на теплицю
-    checkGreenhouseOwnerOrAdmin(req, res, async () => {
-        try {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.greenhouseId)) {
+            return res.status(400).json({ message: 'Invalid greenhouse ID format' });
+        }
+        const greenhouse = await Greenhouse.findById(req.params.greenhouseId);
+        if (!greenhouse) {
+            return res.status(404).json({ message: "Greenhouse not found" });
+        }
+        req.greenhouse = greenhouse; // Встановлюємо для checkGreenhouseOwnerOrAdmin
+        checkGreenhouseOwnerOrAdmin(req, res, async () => {
             const sensors = await Sensor.find({ greenhouseId: req.params.greenhouseId }).populate('greenhouseId', 'name');
             res.json(sensors);
-        } catch (err) {
-            res.status(500).json({ message: err.message });
-        }
-    });
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-
 router.post('/', protect, async (req, res) => {
-    const { type, greenhouseId, model, status, unit, lastValue, lastUpdated } = req.body;
-    if (!type || !greenhouseId || !unit) {
-        return res.status(400).json({ message: "Sensor type, greenhouseId and unit are required" });
+    const { type, greenhouseId, model, status, unit } = req.body;
+    if (!type || !greenhouseId || !unit || !model) {
+        return res.status(400).json({ message: "Sensor type, greenhouseId, model and unit are required" });
     }
     try {
         const greenhouse = await Greenhouse.findById(greenhouseId);
@@ -70,7 +73,11 @@ router.post('/', protect, async (req, res) => {
         if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
             return res.status(403).json({ message: "User not authorized to add sensor to this greenhouse" });
         }
-        const sensor = new Sensor({ type, greenhouseId, model, status, unit, lastValue, lastUpdated });
+        const existingSensorWithModel = await Sensor.findOne({ model: model, greenhouseId: greenhouseId });
+        if (existingSensorWithModel) {
+            return res.status(400).json({ message: `Sensor with model ID '${model}' already exists in this greenhouse.` });
+        }
+        const sensor = new Sensor({ type, greenhouseId, model, status, unit, isDefault: false }); // Не дефолтний
         const newSensor = await sensor.save();
         res.status(201).json(newSensor);
     } catch (err) {
@@ -87,16 +94,18 @@ router.get('/:id', protect, getSensorMiddleware, (req, res) => {
 });
 
 router.patch('/:id', protect, getSensorMiddleware, async (req, res) => {
-    const updatableFields = ['type', 'model', 'status', 'unit', 'lastValue', 'lastUpdated'];
+    const updatableFields = ['type', 'status', 'unit']; // Model не має змінюватися для існуючого сенсора
     updatableFields.forEach(field => {
         if (req.body[field] !== undefined) req.sensor[field] = req.body[field];
     });
-    if (req.body.greenhouseId && req.user.role === 'admin') {
-        const newGreenhouse = await Greenhouse.findById(req.body.greenhouseId);
-        if (!newGreenhouse) return res.status(404).json({message: "New greenhouse for sensor not found"});
-        req.sensor.greenhouseId = req.body.greenhouseId;
-    } else if (req.body.greenhouseId && req.user.role !== 'admin') {
-        return res.status(403).json({message: "Only admin can change sensor's greenhouse assignment."})
+     if (req.body.model && req.body.model !== req.sensor.model && req.user.role === 'admin') {
+        const existingSensorWithModel = await Sensor.findOne({ model: req.body.model, greenhouseId: req.sensor.greenhouseId, _id: { $ne: req.sensor._id } });
+        if (existingSensorWithModel) {
+            return res.status(400).json({ message: `Sensor with model ID '${req.body.model}' already exists in this greenhouse.` });
+        }
+        req.sensor.model = req.body.model;
+    } else if (req.body.model && req.body.model !== req.sensor.model) {
+         return res.status(403).json({ message: "Only admins can change the model ID of a sensor."});
     }
 
   try {
@@ -112,6 +121,9 @@ router.patch('/:id', protect, getSensorMiddleware, async (req, res) => {
 });
 
 router.delete('/:id', protect, getSensorMiddleware, async (req, res) => {
+  if (req.sensor.isDefault && req.user.role !== 'admin') {
+      return res.status(403).json({message: "Default sensors can only be deleted by an admin."});
+  }
   try {
     await SensorData.deleteMany({ sensorId: req.sensor._id });
     await req.sensor.deleteOne();

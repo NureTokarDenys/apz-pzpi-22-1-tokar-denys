@@ -47,8 +47,8 @@ const checkGreenhouseOwnerOrAdmin = async (req, res, next) => {
             return res.status(404).json({ message: 'Greenhouse not found' });
         }
 
-        if (greenhouse && greenhouse.ownerId.toString() !== req.user.id.toString()) {
-            return res.status(403).json({ message: 'User not authorized to access this greenhouse' });
+        if (greenhouse && greenhouse.ownerId._id.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'User not authorized to access this greenhouse'});
         }
         next();
     } catch (error) {

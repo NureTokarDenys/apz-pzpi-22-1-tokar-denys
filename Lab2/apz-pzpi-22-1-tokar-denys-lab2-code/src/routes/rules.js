@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Rule = require('../models/Rule');
 const Greenhouse = require('../models/AutoGreenhouse');
+const Sensor = require('../models/Sensor');
 const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
 const mongoose = require('mongoose');
 
@@ -61,9 +62,9 @@ router.get('/greenhouse/:greenhouseId', protect, async (req, res) => {
 });
 
 router.post('/', protect, async (req, res) => {
-    const { greenhouseId, condition, action, schedule, threshold, status } = req.body;
-    if (!greenhouseId || !condition || !action) {
-        return res.status(400).json({ message: "Greenhouse ID, condition, and action are required" });
+    const { greenhouseId, condition, action, threshold, status } = req.body;
+    if (!greenhouseId || !condition || !action || !threshold || !threshold.sensorModelId || threshold.value === undefined || !threshold.operator) {
+        return res.status(400).json({ message: "Greenhouse ID, condition, action and full threshold (sensorModelId, operator, value) are required" });
     }
     try {
         const greenhouse = await Greenhouse.findById(greenhouseId);
@@ -71,7 +72,12 @@ router.post('/', protect, async (req, res) => {
         if (req.user.role !== 'admin' && greenhouse.ownerId.toString() !== req.user.id.toString()) {
             return res.status(403).json({ message: "User not authorized to create rule for this greenhouse" });
         }
-        const newRule = new Rule({ greenhouseId, condition, action, schedule, threshold, status });
+        const sensor = await Sensor.findOne({ model: threshold.sensorModelId, greenhouseId: greenhouseId });
+        if (!sensor) {
+            return res.status(400).json({message: `Sensor with model ID '${threshold.sensorModelId}' not found in this greenhouse.`});
+        }
+
+        const newRule = new Rule({ greenhouseId, condition: 'sensor_based', action, threshold, status });
         const savedRule = await newRule.save();
         res.status(201).json(savedRule);
     } catch (err) {
@@ -88,10 +94,19 @@ router.get('/:id', protect, getRuleMiddleware, (req, res) => {
 });
 
 router.patch('/:id', protect, getRuleMiddleware, async (req, res) => {
-  const updatableFields = ['condition', 'action', 'schedule', 'threshold', 'status'];
-  updatableFields.forEach(field => {
-      if (req.body[field] !== undefined) req.rule[field] = req.body[field];
-  });
+  const { action, threshold, status } = req.body; // condition не змінюється, бо він тільки sensor_based
+
+  if (action !== undefined) req.rule.action = action;
+  if (status !== undefined) req.rule.status = status;
+  if (threshold !== undefined) {
+      if (threshold.sensorModelId !== undefined) {
+          const sensor = await Sensor.findOne({ model: threshold.sensorModelId, greenhouseId: req.rule.greenhouseId });
+          if (!sensor) return res.status(400).json({message: `Sensor with model ID '${threshold.sensorModelId}' not found in this greenhouse.`});
+          req.rule.threshold.sensorModelId = threshold.sensorModelId;
+      }
+      if (threshold.operator !== undefined) req.rule.threshold.operator = threshold.operator;
+      if (threshold.value !== undefined) req.rule.threshold.value = threshold.value;
+  }
   try {
     const updatedRule = await req.rule.save();
     res.json(updatedRule);

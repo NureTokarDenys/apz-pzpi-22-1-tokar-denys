@@ -9,6 +9,12 @@ const greenhouseSchema = new Schema({
     name: { type: String, required: true, trim: true },
     location: { type: String, trim: true },
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    hardwareId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true
+    },
     createdAt: { type: Date, default: Date.now },
 });
 
