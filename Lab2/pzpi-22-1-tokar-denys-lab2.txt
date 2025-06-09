@@ -1,0 +1,412 @@
+﻿﻿Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+ЗВІТ
+з лабораторної роботи №2 
+з дисципліни "Архітектура програмного забезпечення"
+на тему: "РОЗРОБКА СЕРВЕРНОЇ ЧАСТИНИ СИСТЕМИ"
+
+
+
+
+Виконав 
+ст. гр. ПЗПІ-22-1
+Токар Денис Юрійович
+
+
+Перевірив
+ст. викладач катедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+Харків 2025 р.
+1 Історія змін
+№	Дата      	Версія звіту	Опис змін та виправлень
+1	08.06.2025	0.1	Створення і заповнення
+
+
+2 ЗАВДАННЯ
+Доробити серверну частину, яка була розроблена в минулому семестрі.
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Для виконання лабораторної роботи була використана та модифікована серверна частина з минулого семестра, розроблена на Node.js з використанням фреймворку Express.js та MongoDB як бази даних з ODM Mongoose.
+Основні етапи доопрацювання включали:
+    1. Модифікація Моделей Даних:
+    • До моделі User було додано поле role (з можливими значеннями 'user', 'admin' та 'user' за замовчуванням) для розмежування прав доступу, а також поле deviceToken для зберігання токенів мобільних пристроїв для push-сповіщень.
+    • Реалізовано хешування паролів перед збереженням за допомогою бібліотеки bcrypt та метод для порівняння паролів під час автентифікації.
+    • До моделі Greenhouse додано Mongoose middleware (pre('deleteOne')) для реалізації каскадного видалення пов'язаних із теплицею сутностей: Sensor, SensorData, Rule, Log.
+    2. Розробка Механізмів Автентифікації та Авторизації:
+    • Створено ендпоінти /api/users/register для реєстрації нових користувачів та /api/users/login для їх автентифікації. При успішному логіні/реєстрації генерується JWT токен, який повертається клієнту. Роль користувача також включається в JWT токен.
+    • Розроблено middleware protect для перевірки JWT токенів у заголовках Authorization запитів, що забезпечує захист ендпоінтів. Аутентифікований користувач (req.user) стає доступним в обробниках запитів.
+    • Створено middleware authorizeAdmin для перевірки, чи має аутентифікований користувач роль 'admin'.
+    • Розроблено middleware checkGreenhouseOwnerOrAdmin для перевірки, чи є поточний користувач власником запитуваного ресурсу (наприклад, теплиці) або адміністратором.
+    3. Оновлення та Створення API Ендпоінтів:
+    • Існуючі CRUD ендпоінти для всіх сутностей (User, Greenhouse, Sensor, SensorData, Rule, Log) були захищені за допомогою protect middleware.
+    • Логіка ендпоінтів була модифікована для врахування ролей:
+    • Адміністратори отримали повний доступ до всіх даних (перегляд, редагування, видалення будь-яких сутностей).
+    • Звичайні користувачі можуть переглядати та керувати лише власними ресурсами (наприклад, своїми теплицями та пов'язаними з ними датчиками, правилами).
+    • Ендпоінт для додавання даних датчиків POST /api/sensordata був оновлений для автоматичного оновлення полів lastValue та lastUpdated у відповідній моделі Sensor.
+Всі зміни були спрямовані на створення більш безпечної, гнучкої та функціональної серверної частини, готової до інтеграції з клієнтськими додатками та задоволення вимог, описаних у "Vision & Scope". Під час подальшої розробки ця система може бути незначною мірою модифікована.
+Результати роботи, графічні матеріали та вихідний код представлені у додатках до цього звіту:
+    1. Додаток А містить посилання на відеозапис доповіді з демонстрацією функціоналу доопрацьованої серверної частини та текст хронологічного опису доповіді.
+    2. Додаток Б містить графічні матеріали, що ілюструють архітектуру та структуру даних системи:
+    • Рисунок Б.1 — ЕR-діаграма даних, що відображає сутності системи (User, Greenhouse, Sensor, SensorData, Rule, Log) та зв'язки між ними.
+    • Рисунок Б.2 — UML-діаграма розгортання, яка візуалізує розміщення компонентів системи (клієнтські пристрої, сервер застосунку, база даних, IoT-пристрій) та їх взаємодію через мережу.
+    • Рисунок Б.3 — UML-діаграма прецедентів, що описує взаємодію акторів (Користувач Теплиці, Адміністратор Системи, IoT Пристрій) з основними функціями системи.
+    • Рисунок Б.4 — UML-діаграма компонентів, яка деталізує програмні компоненти системи (клієнтські, серверні, IoT) та їхні інтерфейси взаємодії.
+    3. Додаток В містить лістинги ключових файлів вихідного коду доопрацьованої серверної частини, маршрутизатор(роутер) для теплиць та middleware для автентифікації та авторизації.
+4 ВИСНОВКИ
+В ході виконання лабораторної роботи було успішно доопрацьовано та розширено серверну частину програмної системи автономних теплиць.
+Були реалізовані ключові механізми, необхідні для повноцінної роботи системи у взаємодії з клієнтськими застосунками: впроваджено систему автентифікації на базі JWT, що забезпечує безпечний доступ до API, та систему авторизації на основі ролей ("користувач" та "адміністратор"), яка дозволяє гнучко розмежовувати права доступу до даних та функціоналу системи. Адміністратори отримали можливість керувати всіма аспектами системи, тоді як звичайні користувачі мають доступ лише до власних ресурсів.
+Розширено API для підтримки специфічного функціоналу мобільних та веб-клієнтів, зокрема додано ендпоінти для реєстрації токенів пристроїв для майбутньої реалізації push-сповіщень та для ручного надсилання команд керування виконавчими пристроями теплиць. 
+Проведені модифікації моделей даних та логіки роботи ендпоінтів створили надійну основу для подальшої розробки клієнтських частин (веб та мобільного додатків) та реалізації більш складної бізнес-логіки, включаючи інтеграцію з сервісами push-сповіщень та, у майбутньому, з системами штучного інтелекту. Серверна частина тепер краще відповідає оновленому документу "Vision & Scope" та готова до наступних етапів розробки програмної системи.
+
+Додаток А(посилання на відеозапис доповіді та текст хронологічного опису доповіді)
+Відеозапис доповіді на YouTube: https://youtu.be/jqeKsnWtCqw
+Текст Хронологічного опису:
+00:00 Представлення та вступ до теми лабораторної роботи
+00:06 Огляд завдання та основних етапів доопрацювання серверної частини
+00:28 Модифікація моделей даних: додавання ролей та хешування паролів
+00:47 Механізми автентифікації: створення ендпоінтів для реєстрації та логіну
+01:02 JWT токени та middleware для авторизації та розділення ролей
+01:34 CRUD операції та адаптація під функціонал адміністратора
+01:59 Огляд розроблених діаграм: ER-діаграма, діаграма розгортання, use-case та компонентів
+02:55 Практична демонстрація: створення користувача та отримання токену
+03:38 Тестування розділення прав доступу між звичайними користувачами та адміністраторами
+04:28 Демонстрація захищених ендпоінтів для адміністраторського функціоналу
+04:42 Автоматичне створення датчиків та правил при створенні теплиці
+05:04 Система логування: огляд фіксації всіх дій у системі
+05:46 Завершення презентації та подяка за увагу
+
+Додаток Б (Графічні матеріали)
+
+Рисунок Б.1 — ЕR-діаграма даних
+
+
+Рисунок Б.2 - UML-діаграма розгортання
+
+
+Рисунок Б.2 - UML-діаграма прецедентів
+
+
+
+
+
+
+
+
+
+
+
+
+
+Рисунок Б.4 - UML діаграма компонентів
+
+Додаток В(вихідний код)
+//src/routes/greenhouse.js
+const express = require('express');
+const router = express.Router();
+const Greenhouse = require('../models/AutoGreenhouse');
+const User = require('../models/User');
+const Log = require('../models/Log');
+const Sensor = require('../models/Sensor');
+const Rule = require('../models/Rule');
+const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
+const allowedHardwareIds = require('../config/allowedHardwareIds');
+const mongoose = require('mongoose');
+
+async function createDefaultSensors(greenhouseId, hardwareId) {
+    const defaultSensorTypes = [
+        { type: 'temperature', unit: '°C', modelPrefix: 'TEMP' },
+        { type: 'humidity', unit: '%', modelPrefix: 'HUM' },
+        { type: 'light', unit: 'lux', modelPrefix: 'LIGHT' },
+        { type: 'soil_moisture', unit: '%', modelPrefix: 'SOIL' },
+    ];
+    const createdSensors = [];
+    for (const sensorInfo of defaultSensorTypes) {
+        const sensorModelId = `${hardwareId}_${sensorInfo.modelPrefix}`;
+        let sensor = await Sensor.findOne({ model: sensorModelId, greenhouseId: greenhouseId });
+        if (!sensor) {
+            sensor = new Sensor({
+                type: sensorInfo.type,
+                greenhouseId: greenhouseId,
+                model: sensorModelId,
+                unit: sensorInfo.unit,
+                status: 'active',
+                isDefault: true
+            });
+            await sensor.save();
+            await new Log({
+                            greenhouseId: greenhouseId,
+                            type: 'info',
+                            message: `Default sensor created. Type: ${sensor.type}, Model: ${sensor.model}` 
+                        }).save();
+        }
+        createdSensors.push(sensor);
+    }
+    return createdSensors;
+}
+
+async function createDefaultRules(greenhouseId, defaultSensors) {
+    const rulesToCreate = [];
+
+    const findSensorModelId = (type) => {
+        const sensor = defaultSensors.find(s => s.type === type);
+        return sensor ? sensor.model : null;
+    };
+
+    const tempSensorModelId = findSensorModelId('temperature');
+    const humSensorModelId = findSensorModelId('humidity');
+    const lightSensorModelId = findSensorModelId('light');
+    const soilSensorModelId = findSensorModelId('soil_moisture');
+
+    if (tempSensorModelId) {
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'START_COOLING', threshold: { sensorModelId: tempSensorModelId, operator: '>', value: 28 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'STOP_COOLING',  threshold: { sensorModelId: tempSensorModelId, operator: '<=', value: 25 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'START_HEATING', threshold: { sensorModelId: tempSensorModelId, operator: '<', value: 18 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'STOP_HEATING',  threshold: { sensorModelId: tempSensorModelId, operator: '>=', value: 21 }, status: 'inactive' });
+    }
+    if (humSensorModelId) {
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'START_VENTILATION', threshold: { sensorModelId: humSensorModelId, operator: '>', value: 75 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'STOP_VENTILATION',  threshold: { sensorModelId: humSensorModelId, operator: '<=', value: 60 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'START_HUMIDIFYING', threshold: { sensorModelId: humSensorModelId, operator: '<', value: 40 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'STOP_HUMIDIFYING',  threshold: { sensorModelId: humSensorModelId, operator: '>=', value: 50 }, status: 'inactive' });
+    }
+    if (lightSensorModelId) {
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'TURN_ON_LIGHT',  threshold: { sensorModelId: lightSensorModelId, operator: '<', value: 5000 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'TURN_OFF_LIGHT', threshold: { sensorModelId: lightSensorModelId, operator: '>=', value: 10000 }, status: 'inactive' });
+    }
+    if (soilSensorModelId) {
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'START_WATERING', threshold: { sensorModelId: soilSensorModelId, operator: '<', value: 30 }, status: 'inactive' });
+        rulesToCreate.push({ greenhouseId, condition: 'sensor_based', action: 'STOP_WATERING',  threshold: { sensorModelId: soilSensorModelId, operator: '>=', value: 60 }, status: 'inactive' });
+    }
+
+    for (const ruleData of rulesToCreate) {
+        const existingRule = await Rule.findOne({
+            greenhouseId: ruleData.greenhouseId,
+            'threshold.sensorModelId': ruleData.threshold.sensorModelId,
+            'threshold.operator': ruleData.threshold.operator,
+            'threshold.value': ruleData.threshold.value,
+            action: ruleData.action
+        });
+        if (!existingRule) {
+            const newRule = new Rule(ruleData);
+            await newRule.save();
+            await new Log({
+                            greenhouseId: greenhouseId,
+                            type: 'info',
+                            message: `Default rule created: If ${ruleData.threshold.sensorModelId} ${ruleData.threshold.operator} ${ruleData.threshold.value}, then ${ruleData.action}.` // <--- ВИПРАВЛЕНО ПОВІДОМЛЕННЯ
+                        }).save();
+        }
+    }
+}
+
+async function getGreenhouseMiddleware(req, res, next) {
+  let greenhouse;
+  try {
+    const idToFind = req.params.id || req.params.greenhouseId;
+    if (!mongoose.Types.ObjectId.isValid(idToFind)) {
+        return res.status(400).json({ message: 'Invalid greenhouse ID format' });
+    }
+    greenhouse = await Greenhouse.findById(idToFind).populate('ownerId', 'username role');
+    if (!greenhouse) {
+      return res.status(404).json({ message: 'Cannot find greenhouse' });
+    }
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  req.greenhouse = greenhouse;
+  next();
+}
+
+router.get('/', protect, async (req, res) => {
+  try {
+    let query = {};
+    if (req.user.role !== 'admin') {
+      query.ownerId = req.user.id;
+    }
+    const greenhouses = await Greenhouse.find(query).populate('ownerId', 'username');
+    res.json(greenhouses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/', protect, async (req, res) => {
+    const { name, location, hardwareId } = req.body;
+    if (!name) {
+        return res.status(400).json({ message: "Greenhouse name is required" });
+    }
+    if (!hardwareId) {
+        return res.status(400).json({ message: "hardwareId for the IoT controller is required" });
+    }
+    if (!allowedHardwareIds.includes(hardwareId)) {
+        return res.status(400).json({ message: `Hardware ID '${hardwareId}' is not recognized or not allowed.` });
+    }
+
+    try {
+        const existingGreenhouseByHwId = await Greenhouse.findOne({ hardwareId: hardwareId });
+        if (existingGreenhouseByHwId) {
+            return res.status(400).json({ message: "This hardware ID is already registered." });
+        }
+        const greenhouse = new Greenhouse({ name, location, hardwareId, ownerId: req.user.id });
+        const newGreenhouse = await greenhouse.save();
+        await new Log({
+                          greenhouseId: newGreenhouse._id,
+                          type: 'info',
+                          message: `The greenhouse '${newGreenhouse.name}' was created.` 
+                      }).save();
+        const createdSensors = await createDefaultSensors(newGreenhouse._id, newGreenhouse.hardwareId);
+        if (createdSensors.length > 0) {
+            await createDefaultRules(newGreenhouse._id, createdSensors);
+        }
+        res.status(201).json(newGreenhouse);
+    } catch (err) {
+        if (err.name === 'ValidationError' || (err.code === 11000 && err.keyPattern && err.keyPattern.hardwareId)) {
+            let errors = {};
+            if (err.name === 'ValidationError') Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
+            if (err.code === 11000) errors.hardwareId = "This hardware ID is already in use (concurrent request?).";
+            return res.status(400).json({ message: "Validation Error or Duplicate Hardware ID", errors });
+        }
+        console.error("Error creating greenhouse:", err); 
+        res.status(500).json({ message: 'Server error creating greenhouse', details: err.message });
+    }
+});
+
+router.get('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin, (req, res) => {
+  res.json(req.greenhouse);
+});
+
+router.patch('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin, async (req, res) => {
+  const oldHardwareId = req.greenhouse.hardwareId;
+  let hardwareIdWasSetOrChanged = false; 
+
+  if (req.body.name != null) req.greenhouse.name = req.body.name;
+  if (req.body.location != null) req.greenhouse.location = req.body.location;
+
+  if (req.body.hardwareId != null) { 
+     if (!allowedHardwareIds.includes(req.body.hardwareId)) {
+          return res.status(400).json({ message: `Hardware ID '${req.body.hardwareId}' is not recognized or not allowed.` });
+      }
+      if (req.body.hardwareId !== oldHardwareId) { 
+          if (req.user.role !== 'admin' && oldHardwareId) {
+               return res.status(403).json({ message: "Only admins can change the hardware ID of an existing greenhouse if it was previously set."});
+          }
+          const existingGreenhouse = await Greenhouse.findOne({ hardwareId: req.body.hardwareId, _id: { $ne: req.greenhouse._id } });
+          if (existingGreenhouse) {
+              return res.status(400).json({ message: "This hardware ID is already registered to another greenhouse." });
+          }
+          req.greenhouse.hardwareId = req.body.hardwareId;
+          hardwareIdWasSetOrChanged = true;
+      }
+  }
+
+  if (req.body.ownerId != null && req.user.role === 'admin') {
+      if (!mongoose.Types.ObjectId.isValid(req.body.ownerId)) {
+          return res.status(400).json({ message: 'Invalid new owner ID format' });
+      }
+      const newOwner = await User.findById(req.body.ownerId);
+      if (!newOwner) return res.status(404).json({ message: 'New owner not found' });
+      req.greenhouse.ownerId = req.body.ownerId;
+  } else if (req.body.ownerId != null && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can change greenhouse ownership.' });
+  }
+  try {
+    const updatedGreenhouse = await req.greenhouse.save();
+    if (updatedGreenhouse.hardwareId && hardwareIdWasSetOrChanged) { 
+        const createdSensors = await createDefaultSensors(updatedGreenhouse._id, updatedGreenhouse.hardwareId);
+        if (createdSensors.length > 0) {
+            await createDefaultRules(updatedGreenhouse._id, createdSensors);
+        }
+    }
+    res.json(updatedGreenhouse);
+  } catch (err) {
+    if (err.name === 'ValidationError' || (err.code === 11000 && err.keyPattern && err.keyPattern.hardwareId)) {
+        let errors = {};
+        if (err.name === 'ValidationError') Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
+        if (err.code === 11000) errors.hardwareId = "This hardware ID is already in use.";
+        return res.status(400).json({ message: "Validation Error", errors });
+    }
+    console.error("Error updating greenhouse:", err); 
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.delete('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin, async (req, res) => {
+  try {
+    await req.greenhouse.deleteOne();
+    res.json({ message: 'Deleted Greenhouse and related data' });
+  } catch (err) {
+    console.error("Error deleting greenhouse:", err); 
+    res.status(500).json({ message: err.message });
+  }
+});
+
+module.exports = router; 
+
+//src/middleware/auth.js
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Greenhouse = require('../models/AutoGreenhouse');
+
+const protect = async (req, res, next) => {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = await User.findById(decoded.id).select('-password');
+
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized, user not found for this token' });
+            }
+            next();
+        } catch (error) {
+            if (error.name === 'JsonWebTokenError') {
+                return res.status(401).json({ message: 'Not authorized, invalid token' });
+            }
+            if (error.name === 'TokenExpiredError') {
+                return res.status(401).json({ message: 'Not authorized, token expired' });
+            }
+            res.status(401).json({ message: 'Not authorized, token failed' });
+        }
+    } else {
+        res.status(401).json({ message: 'Not authorized, no token' });
+    }
+};
+
+const authorizeAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Not authorized as an admin' });
+    }
+};
+
+const checkGreenhouseOwnerOrAdmin = async (req, res, next) => {
+    try {
+        if (req.user && req.user.role === 'admin') {
+            return next();
+        }
+        const greenhouse = req.greenhouse || (req.params.greenhouseId && await Greenhouse.findById(req.params.greenhouseId));
+
+        if (req.params.greenhouseId && !greenhouse) {
+            return res.status(404).json({ message: 'Greenhouse not found' });
+        }
+
+        if (greenhouse && greenhouse.ownerId._id.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'User not authorized to access this greenhouse'});
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while checking greenhouse ownership or admin role' });
+    }
+};
+
+module.exports = { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin };
+
