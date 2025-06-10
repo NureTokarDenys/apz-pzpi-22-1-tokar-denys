@@ -1,0 +1,112 @@
+.navbar {
+    background-color: #34495e; /* Темно-сіро-синій */
+    padding: 0.8rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.brand {
+    font-size: 1.5rem;
+    color: #ecf0f1; /* Світлий колір для бренду */
+    text-decoration: none;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.brandIcon {
+    margin-right: 0.5rem;
+    font-size: 1.8rem; /* Розмір іконки */
+}
+
+.navLinks {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+.navLinks li {
+    margin-left: 1.5rem; /* Відстань між пунктами */
+}
+
+.navLink {
+    color: #bdc3c7; /* Світло-сірий для посилань */
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 0.5rem 0;
+    transition: color 0.3s ease;
+    position: relative; /* Для підкреслення */
+    background: none; /* Для кнопок, щоб виглядали як посилання */
+    border: none;
+    cursor: pointer;
+    font-family: inherit; /* Успадкування шрифту */
+}
+
+.navLink:hover,
+.navLink.active {
+    color: #ffffff; /* Білий при наведенні або активності */
+}
+
+/* Підкреслення для активного посилання */
+.navLink.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; /* Відстань підкреслення від тексту */
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #3498db; /* Колір підкреслення */
+}
+
+.logoutButton {
+    color: #e74c3c; /* Червоний для кнопки виходу */
+}
+.logoutButton:hover {
+    color: #c0392b;
+}
+
+/* Dropdown для адмін панелі */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown .navLink { /* Щоб сам текст "Панель Адміністратора" мав стиль */
+    cursor: default; /* Не клікабельний, бо це контейнер */
+}
+
+
+.dropdownContent {
+    display: none;
+    position: absolute;
+    background-color: #34495e; /* Такий же фон як у навбару */
+    min-width: 220px; /* Ширина випадаючого списку */
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 0 0 5px 5px; /* Закруглення знизу */
+    padding: 0.5rem 0; /* Відступи всередині */
+    list-style: none; /* Забираємо маркери списку */
+    margin-top: 0.2rem; /* Невеликий відступ від батьківського елемента */
+}
+
+.dropdown:hover .dropdownContent {
+    display: block;
+}
+
+.dropdownLink {
+    color: #bdc3c7;
+    padding: 0.75rem 1rem; /* Відступи для пунктів */
+    text-decoration: none;
+    display: block;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dropdownLink:hover {
+    background-color: #4a627a; /* Трохи світліший фон при наведенні */
+    color: #ffffff;
+}

@@ -1,0 +1,67 @@
+.adminPageContainer {
+    padding: 2rem;
+}
+
+.adminPageContainer h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+}
+
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dataTable th, .dataTable td {
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.dataTable th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    color: #555;
+}
+
+.dataTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.dataTable tr:hover {
+    background-color: #f1f1f1;
+}
+
+.actionButton {
+    padding: 0.3rem 0.6rem;
+    margin-right: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
+    font-size: 0.9rem;
+    text-decoration: none; /* Для Link */
+    display: inline-block; /* Для Link */
+}
+
+.actionButton:nth-child(1) { /* Details/Edit button */
+    background-color: #007bff;
+}
+.actionButton:nth-child(1):hover {
+    background-color: #0056b3;
+}
+
+.deleteButton {
+    background-color: #dc3545;
+}
+.deleteButton:hover {
+    background-color: #c82333;
+}
+
+.error {
+    color: red;
+    text-align: center;
+}

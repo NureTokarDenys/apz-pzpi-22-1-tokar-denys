@@ -1,0 +1,8 @@
+.loginPageContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh; /* Або інша висота, щоб форма була по центру */
+    padding: 1rem;
+}
