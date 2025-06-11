@@ -84,7 +84,15 @@
     background-color: #c82333;
 }
 
-.cancelButton { /* Для модального вікна */
+.saveButton {
+    background-color: #5cc940;
+}
+
+.saveButton:hover {
+    background-color: #208d2f;
+}
+
+.cancelButton { 
     background-color: #6c757d;
 }
 .cancelButton:hover {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/users'; // Переконайтесь, що змінна середовища встановлена
+const API_URL = process.env.REACT_APP_API_URL + "/users" || 'http://localhost:5000/api/users';
 
 const register = async (username, email, password, role) => {
     try {

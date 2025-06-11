@@ -5,8 +5,8 @@ const User = require('../models/User');
 const Log = require('../models/Log');
 const Sensor = require('../models/Sensor');
 const Rule = require('../models/Rule');
+const AllowedHardware = require('../models/AllowedHardware'); 
 const { protect, authorizeAdmin, checkGreenhouseOwnerOrAdmin } = require('../middleware/auth');
-const allowedHardwareIds = require('../config/allowedHardwareIds');
 const mongoose = require('mongoose');
 
 async function createDefaultSensors(greenhouseId, hardwareId) {
@@ -31,10 +31,10 @@ async function createDefaultSensors(greenhouseId, hardwareId) {
             });
             await sensor.save();
             await new Log({
-                            greenhouseId: greenhouseId,
-                            type: 'info',
-                            message: `Default sensor created. Type: ${sensor.type}, Model: ${sensor.model}` 
-                        }).save();
+                greenhouseId: greenhouseId,
+                type: 'info',
+                message: `Default sensor created. Type: ${sensor.type}, Model: ${sensor.model}`
+            }).save();
         }
         createdSensors.push(sensor);
     }
@@ -43,7 +43,6 @@ async function createDefaultSensors(greenhouseId, hardwareId) {
 
 async function createDefaultRules(greenhouseId, defaultSensors) {
     const rulesToCreate = [];
-
     const findSensorModelId = (type) => {
         const sensor = defaultSensors.find(s => s.type === type);
         return sensor ? sensor.model : null;
@@ -87,10 +86,10 @@ async function createDefaultRules(greenhouseId, defaultSensors) {
             const newRule = new Rule(ruleData);
             await newRule.save();
             await new Log({
-                            greenhouseId: greenhouseId,
-                            type: 'info',
-                            message: `Default rule created: If ${ruleData.threshold.sensorModelId} ${ruleData.threshold.operator} ${ruleData.threshold.value}, then ${ruleData.action}.` // <--- ВИПРАВЛЕНО ПОВІДОМЛЕННЯ
-                        }).save();
+                greenhouseId: greenhouseId,
+                type: 'info',
+                message: `Default rule created: If ${ruleData.threshold.sensorModelId} ${ruleData.threshold.operator} ${ruleData.threshold.value}, then ${ruleData.action}.`
+            }).save();
         }
     }
 }
@@ -127,42 +126,45 @@ router.get('/', protect, async (req, res) => {
 });
 
 router.post('/', protect, async (req, res) => {
-    const { name, location, hardwareId } = req.body;
-    if (!name) {
-        return res.status(400).json({ message: "Greenhouse name is required" });
-    }
-    if (!hardwareId) {
-        return res.status(400).json({ message: "hardwareId for the IoT controller is required" });
-    }
-    if (!allowedHardwareIds.includes(hardwareId)) {
-        return res.status(400).json({ message: `Hardware ID '${hardwareId}' is not recognized or not allowed.` });
+    const { name, location, hardwareId, ownerId } = req.body;
+    if (!name || !hardwareId) {
+        return res.status(400).json({ message: "Greenhouse name and Hardware ID are required" });
     }
 
     try {
-        const existingGreenhouseByHwId = await Greenhouse.findOne({ hardwareId: hardwareId });
-        if (existingGreenhouseByHwId) {
-            return res.status(400).json({ message: "This hardware ID is already registered." });
+        const allowedHwEntry = await AllowedHardware.findOne({ hardwareId: hardwareId });
+        if (!allowedHwEntry) {
+            return res.status(400).json({ message: `Hardware ID '${hardwareId}' is not in the allowed list.` });
         }
-        const greenhouse = new Greenhouse({ name, location, hardwareId, ownerId: req.user.id });
+        if (allowedHwEntry.isAssigned) {
+            return res.status(400).json({ message: `Hardware ID '${hardwareId}' is already assigned to another greenhouse.` });
+        }
+
+        const oId = ownerId ? ownerId : req.user.id;
+        const greenhouse = new Greenhouse({ name, location, hardwareId, ownerId: oId });
         const newGreenhouse = await greenhouse.save();
+
+        allowedHwEntry.isAssigned = true;
+        allowedHwEntry.assignedGreenhouseId = newGreenhouse._id;
+        await allowedHwEntry.save();
+
         await new Log({
-                          greenhouseId: newGreenhouse._id,
-                          type: 'info',
-                          message: `The greenhouse '${newGreenhouse.name}' was created.` 
-                      }).save();
+            greenhouseId: newGreenhouse._id,
+            type: 'info',
+            message: `The greenhouse '${newGreenhouse.name}' was created with Hardware ID: ${hardwareId}.`
+        }).save();
+
         const createdSensors = await createDefaultSensors(newGreenhouse._id, newGreenhouse.hardwareId);
         if (createdSensors.length > 0) {
             await createDefaultRules(newGreenhouse._id, createdSensors);
         }
         res.status(201).json(newGreenhouse);
     } catch (err) {
-        if (err.name === 'ValidationError' || (err.code === 11000 && err.keyPattern && err.keyPattern.hardwareId)) {
-            let errors = {};
-            if (err.name === 'ValidationError') Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
-            if (err.code === 11000) errors.hardwareId = "This hardware ID is already in use (concurrent request?).";
-            return res.status(400).json({ message: "Validation Error or Duplicate Hardware ID", errors });
+        if (err.name === 'ValidationError') {
+            let errors = {}; Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
+            return res.status(400).json({ message: "Validation Error", errors });
         }
-        console.error("Error creating greenhouse:", err); 
+        console.error("Error creating greenhouse:", err);
         res.status(500).json({ message: 'Server error creating greenhouse', details: err.message });
     }
 });
@@ -173,26 +175,35 @@ router.get('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin
 
 router.patch('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin, async (req, res) => {
   const oldHardwareId = req.greenhouse.hardwareId;
-  let hardwareIdWasSetOrChanged = false; 
+  let hardwareIdWasSetOrChanged = false;
 
   if (req.body.name != null) req.greenhouse.name = req.body.name;
   if (req.body.location != null) req.greenhouse.location = req.body.location;
 
-  if (req.body.hardwareId != null) { 
-     if (!allowedHardwareIds.includes(req.body.hardwareId)) {
-          return res.status(400).json({ message: `Hardware ID '${req.body.hardwareId}' is not recognized or not allowed.` });
+  if (req.body.hardwareId != null && req.body.hardwareId !== oldHardwareId) {
+      if (req.user.role !== 'admin' && oldHardwareId) {
+           return res.status(403).json({ message: "Only admins can change the hardware ID of an existing greenhouse if it was previously set."});
       }
-      if (req.body.hardwareId !== oldHardwareId) { 
-          if (req.user.role !== 'admin' && oldHardwareId) {
-               return res.status(403).json({ message: "Only admins can change the hardware ID of an existing greenhouse if it was previously set."});
-          }
-          const existingGreenhouse = await Greenhouse.findOne({ hardwareId: req.body.hardwareId, _id: { $ne: req.greenhouse._id } });
-          if (existingGreenhouse) {
-              return res.status(400).json({ message: "This hardware ID is already registered to another greenhouse." });
-          }
-          req.greenhouse.hardwareId = req.body.hardwareId;
-          hardwareIdWasSetOrChanged = true;
+      const newAllowedHwEntry = await AllowedHardware.findOne({ hardwareId: req.body.hardwareId });
+      if (!newAllowedHwEntry) {
+          return res.status(400).json({ message: `New Hardware ID '${req.body.hardwareId}' is not in the allowed list.` });
       }
+      if (newAllowedHwEntry.isAssigned && newAllowedHwEntry.assignedGreenhouseId.toString() !== req.greenhouse._id.toString()) {
+          return res.status(400).json({ message: `New Hardware ID '${req.body.hardwareId}' is already assigned to another greenhouse.` });
+      }
+
+      req.greenhouse.hardwareId = req.body.hardwareId;
+      hardwareIdWasSetOrChanged = true;
+  } else if (req.body.hardwareId != null && !oldHardwareId && req.body.hardwareId) { // Додавання hardwareId, якщо його не було
+      const newAllowedHwEntry = await AllowedHardware.findOne({ hardwareId: req.body.hardwareId });
+      if (!newAllowedHwEntry) {
+          return res.status(400).json({ message: `Hardware ID '${req.body.hardwareId}' is not in the allowed list.` });
+      }
+      if (newAllowedHwEntry.isAssigned) {
+          return res.status(400).json({ message: `Hardware ID '${req.body.hardwareId}' is already assigned.` });
+      }
+      req.greenhouse.hardwareId = req.body.hardwareId;
+      hardwareIdWasSetOrChanged = true;
   }
 
 
@@ -208,33 +219,61 @@ router.patch('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdm
   }
   try {
     const updatedGreenhouse = await req.greenhouse.save();
-    if (updatedGreenhouse.hardwareId && hardwareIdWasSetOrChanged) { 
+
+    if (hardwareIdWasSetOrChanged) {
+        if (oldHardwareId && oldHardwareId !== updatedGreenhouse.hardwareId) {
+            const oldHwEntry = await AllowedHardware.findOne({ hardwareId: oldHardwareId });
+            if (oldHwEntry) {
+                oldHwEntry.isAssigned = false;
+                oldHwEntry.assignedGreenhouseId = null;
+                await oldHwEntry.save();
+            }
+        }
+        if (updatedGreenhouse.hardwareId) {
+            const currentHwEntry = await AllowedHardware.findOne({ hardwareId: updatedGreenhouse.hardwareId });
+            if (currentHwEntry) {
+                currentHwEntry.isAssigned = true;
+                currentHwEntry.assignedGreenhouseId = updatedGreenhouse._id;
+                await currentHwEntry.save();
+            }
+        }
+    }
+
+    if (updatedGreenhouse.hardwareId && hardwareIdWasSetOrChanged) {
         const createdSensors = await createDefaultSensors(updatedGreenhouse._id, updatedGreenhouse.hardwareId);
-        if (createdSensors.length > 0) {
+         if (createdSensors.length > 0) {
             await createDefaultRules(updatedGreenhouse._id, createdSensors);
         }
     }
     res.json(updatedGreenhouse);
   } catch (err) {
-    if (err.name === 'ValidationError' || (err.code === 11000 && err.keyPattern && err.keyPattern.hardwareId)) {
-        let errors = {};
-        if (err.name === 'ValidationError') Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
-        if (err.code === 11000) errors.hardwareId = "This hardware ID is already in use.";
+    if (err.name === 'ValidationError') {
+        let errors = {}; Object.keys(err.errors).forEach((key) => { errors[key] = err.errors[key].message; });
         return res.status(400).json({ message: "Validation Error", errors });
     }
-    console.error("Error updating greenhouse:", err); 
+    console.error("Error updating greenhouse:", err);
     res.status(400).json({ message: err.message });
   }
 });
 
 router.delete('/:id', protect, getGreenhouseMiddleware, checkGreenhouseOwnerOrAdmin, async (req, res) => {
   try {
+    const hardwareIdToRelease = req.greenhouse.hardwareId;
     await req.greenhouse.deleteOne();
-    res.json({ message: 'Deleted Greenhouse and related data' });
+
+    if (hardwareIdToRelease) {
+        const hwEntry = await AllowedHardware.findOne({ hardwareId: hardwareIdToRelease });
+        if (hwEntry) {
+            hwEntry.isAssigned = false;
+            hwEntry.assignedGreenhouseId = null;
+            await hwEntry.save();
+        }
+    }
+    res.json({ message: 'Deleted Greenhouse and related data, hardware ID released.' });
   } catch (err) {
-    console.error("Error deleting greenhouse:", err); 
+    console.error("Error deleting greenhouse:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-module.exports = router; 
+module.exports = router;

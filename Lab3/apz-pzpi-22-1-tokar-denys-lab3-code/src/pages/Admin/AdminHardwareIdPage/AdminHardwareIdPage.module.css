@@ -1,6 +1,6 @@
 .adminPageContainer {
     padding: 2rem;
-    max-width: 800px;
+    max-width: 900px; /* Трохи ширше для таблиці з Hardware ID */
     margin: auto;
 }
 
@@ -11,65 +11,100 @@
 }
 
 .addForm {
-    display: flex;
     margin-bottom: 2rem;
-    gap: 1rem;
+    padding: 1.5rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-
-.addForm input {
+.formInputGroup {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.formInput {
     flex-grow: 1;
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
 }
-
-.addForm button {
+.formButton {
     padding: 0.75rem 1.5rem;
     background-color: #28a745;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: block; /* Щоб помилка була під кнопкою */
+    margin-left: auto; /* Якщо потрібно вирівняти праворуч */
 }
-.addForm button:hover {
+.formButton:hover {
     background-color: #218838;
 }
-
-.idList {
-    list-style: none;
-    padding: 0;
+.formError { /* Для помилок саме форми додавання */
+    color: red;
+    font-size: 0.9em;
+    margin-top: 0.5rem;
 }
 
-.idItem {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+
+.tableContainer {
+    overflow-x: auto;
+}
+
+.dataTable { /* Уніфікована назва класу для таблиць */
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dataTable th, .dataTable td {
+    border: 1px solid #ddd;
     padding: 0.75rem;
-    border-bottom: 1px solid #eee;
+    text-align: left;
 }
 
-.idItem:last-child {
-    border-bottom: none;
+.dataTable th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    color: #555;
 }
 
-.idItem span {
-    font-size: 1.1rem;
+.dataTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+.dataTable tr.assignedRow { /* Стиль для прив'язаних ID */
+    background-color: #e9ecef; /* Світло-сірий */
+    color: #495057;
+}
+.dataTable tr.assignedRow:hover {
+    background-color: #dce0e3;
+}
+
+
+.actionsCell {
+    white-space: nowrap;
 }
 
 .actionButton {
-    padding: 0.3rem 0.6rem;
-    margin-left: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    margin-left: 0.5rem; /* Змінено з margin-right */
     border: none;
     border-radius: 4px;
     cursor: pointer;
     color: white;
     font-size: 0.9rem;
 }
+.actionButton:first-child {
+    margin-left: 0;
+}
 
-.actionButton:nth-child(1), .saveButton { /* Edit button */
+
+.editButton {
     background-color: #007bff;
 }
-.actionButton:nth-child(1):hover, .saveButton:hover {
+.editButton:hover {
     background-color: #0056b3;
 }
 
@@ -79,23 +114,101 @@
 .deleteButton:hover {
     background-color: #c82333;
 }
+.deleteButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+.deleteButton:disabled:hover {
+    background-color: #ccc;
+}
 
-.cancelButton {
-    background-color: #6c757d;
-}
-.cancelButton:hover{
-    background-color: #5a6268;
-}
 
-.editInput {
-    padding: 0.3rem;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    margin-right: 0.5rem;
+.statusBadge {
+    padding: 0.2em 0.6em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75em;
+    white-space: nowrap;
 }
+.assignedBadge { background-color: #ffc107; color: #212529; }
+.availableBadge { background-color: #28a745; }
+
 
 .error {
     color: red;
     text-align: center;
     margin-bottom: 1rem;
+    padding: 0.5rem;
+    border: 1px solid red;
+    background-color: #ffe0e0;
+    border-radius: 4px;
+}
+
+/* Modal Styles (схожі на попередні) */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+}
+
+.modalContent h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.formGroup input, .formGroup select, .editInputFull {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.modalActions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.saveButton { /* Для кнопки Save в модальному вікні редагування */
+    background-color: #28a745;
+}
+.saveButton:hover {
+    background-color: #218838;
+}
+.cancelButton {
+    background-color: #6c757d;
+}
+.cancelButton:hover {
+    background-color: #545b62;
 }

@@ -1,0 +1,311 @@
+.detailPageContainer {
+    padding: 2rem;
+    max-width: 1300px;
+    margin: auto;
+}
+.headerActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.detailPageContainer h2 {
+    color: #333;
+    margin: 0;
+}
+
+.backButton, .actionButton {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+}
+.backButton {
+    margin-bottom: 1.5rem;
+}
+.backButton:hover, .actionButton:hover {
+    background-color: #5a6268;
+}
+.actionButton { /* Для кнопки "Редагувати теплицю" */
+    background-color: #007bff;
+}
+.actionButton:hover { /* Для кнопки "Редагувати теплицю" */
+    background-color: #0056b3;
+}
+
+.ghInfo {
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.ghInfo p {
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+.ghInfo p strong {
+    color: #2c3e50;
+    min-width: 180px;
+    display: inline-block;
+}
+
+.sectionsContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.dataSection {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 0.5rem;
+}
+
+.dataSection h3 {
+    margin-top: 0;
+    margin-bottom: 0; /* Прибрали margin-bottom, бо є в .sectionHeader */
+    color: #007bff;
+}
+
+.addButtonSmall {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.addButtonSmall:hover {
+    background-color: #218838;
+}
+
+
+.itemList {
+    list-style: none;
+    padding: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 350px; /* Зменшив трохи */
+}
+
+.itemList li {
+    padding: 0.7rem 0.2rem; /* Збільшив вертикальний падінг */
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: flex; /* Для розташування кнопок дій */
+    justify-content: space-between; /* Розносимо контент і кнопки */
+    align-items: center; /* Вирівнюємо по центру вертикально */
+}
+.itemList li:last-child {
+    border-bottom: none;
+}
+
+.sensorItem > div:first-child, .ruleItem > div:first-child { /* Контейнер для тексту, щоб кнопки були окремо */
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex-grow: 1; /* Займає доступний простір */
+    margin-right: 0.5rem; /* Відступ від кнопок */
+}
+
+
+.sensorType { font-weight: bold; }
+.sensorValue { font-weight: 500; } /* Зробив значення сенсора жирнішим */
+.sensorTimestamp { font-size: 0.8em; color: #777; }
+.defaultBadge {
+    font-size: 0.75em;
+    background-color: #6c757d;
+    color: white;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    margin-left: 0.5em;
+    font-weight: normal;
+}
+
+.statusBadge {
+    padding: 0.2em 0.5em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: 500;
+    text-transform: capitalize;
+    font-size: 0.8em;
+    /* margin-left: auto; Забираємо, бо тепер в itemActions */
+    white-space: nowrap;
+}
+.activeBadge { background-color: #28a745; }
+.inactiveBadge { background-color: #6c757d; }
+
+.itemActions {
+    display: flex;
+    gap: 0.3rem; /* Відстань між кнопками */
+    align-items: center; /* Вирівнювання, якщо статус і кнопки разом */
+}
+
+.actionButtonSmall {
+    padding: 0.3rem 0.5rem; /* Менші кнопки */
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    color: white;
+}
+.editButton { /* Стиль для кнопки редагування в списку */
+    background-color: #007bff;
+}
+.editButton:hover {
+    background-color: #0056b3;
+}
+.deleteButton { /* Стиль для кнопки видалення в списку */
+    background-color: #dc3545;
+}
+.deleteButton:hover {
+    background-color: #c82333;
+}
+.deleteButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
+.logItem { /* Для елемента логу */
+    display: block; /* Повертаємо блочне відображення для кращого форматування тексту логу */
+}
+.logTimestamp { color: #555; margin-right: 0.5em; font-size: 0.85em; }
+.logTypeBadge {
+    padding: 0.2em 0.5em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.7em; /* Трохи менше */
+    margin-right: 0.5em;
+}
+.badgeInfo { background-color: #17a2b8; }
+.badgeAction { background-color: #007bff; }
+.badgeError { background-color: #dc3545; }
+.badgeWarning { background-color: #ffc107; color: #212529;}
+.logMessage { /* flex-grow: 1; */ display: inline;} /* Забираємо flex-grow */
+.logUser { font-size: 0.8em; color: #777; margin-left: 0.5em; }
+.log-error .logMessage { color: #dc3545; }
+
+
+.error {
+    color: red;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* Modal Styles (загальні для модальних вікон) */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Трохи темніший фон */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Вищий z-index */
+}
+
+.modalContent {
+    background-color: white;
+    padding: 1.5rem 2rem; /* Трохи змінені падінги */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px; /* Максимальна ширина */
+    max-height: 90vh; /* Максимальна висота */
+    overflow-y: auto; /* Скрол, якщо контент не вміщується */
+}
+
+.modalContent h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="email"], /* Додав для уніфікації */
+.formGroup input[type="password"], /* Додав для уніфікації */
+.formGroup select {
+    width: 100%;
+    padding: 0.6rem 0.8rem; /* Уніфіковані падінги */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.95rem;
+}
+.formGroup input:focus, .formGroup select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    outline: none;
+}
+
+
+.modalActions {
+    margin-top: 2rem; /* Більший відступ */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem; /* Більший відступ між кнопками */
+}
+
+.modalActions .actionButton { /* Для кнопок в модальному вікні */
+    padding: 0.6rem 1.2rem; /* Уніфіковані падінги */
+}
+
+.saveButton { /* Для кнопки Save в модальному вікні */
+    background-color: #28a745;
+}
+.saveButton:hover {
+    background-color: #218838;
+}
+.cancelButton {
+    background-color: #6c757d;
+}
+.cancelButton:hover {
+    background-color: #545b62;
+}
+
+.modalContent .error { /* Стиль для помилок всередині модального вікна */
+    font-size: 0.9em;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}

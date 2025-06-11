@@ -8,7 +8,6 @@ const RegisterForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    // const [role, setRole] = useState('user'); // Можна додати, якщо адмін реєструє інших адмінів
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const auth = useAuth();
@@ -23,9 +22,8 @@ const RegisterForm = () => {
         setError('');
         setLoading(true);
         try {
-            // Наразі роль передається як undefined, бекенд має встановити 'user' або логіку для першого адміна
-            await auth.register(username, email, password /*, role */);
-            navigate('/dashboard'); // Або на головну
+            await auth.register(username, email, password);
+            navigate('/'); 
         } catch (err) {
             setError(err.message || 'Failed to register. Please try again.');
         }

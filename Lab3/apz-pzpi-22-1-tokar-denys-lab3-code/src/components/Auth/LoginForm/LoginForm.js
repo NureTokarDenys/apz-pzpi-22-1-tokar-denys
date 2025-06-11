@@ -17,7 +17,7 @@ const LoginForm = () => {
         setLoading(true);
         try {
             await auth.login(username, password);
-            navigate('/dashboard'); // Або на головну, якщо логін успішний
+            navigate('/');
         } catch (err) {
             setError(err.message || 'Failed to login. Please check your credentials.');
         }

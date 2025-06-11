@@ -1,5 +1,7 @@
 .adminPageContainer {
     padding: 2rem;
+    max-width: 1100px; /* Можна налаштувати */
+    margin: auto;
 }
 
 .adminPageContainer h2 {
@@ -8,11 +10,31 @@
     color: #333;
 }
 
-.dataTable {
+.addButton {
+    background-color: #28a745;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    display: inline-block;
+}
+.addButton:hover {
+    background-color: #218838;
+}
+
+.tableContainer {
+    overflow-x: auto;
+}
+
+.dataTable { /* Уніфікована назва класу для таблиць */
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-width: 800px; /* Мінімальна ширина таблиці */
 }
 
 .dataTable th, .dataTable td {
@@ -35,22 +57,29 @@
     background-color: #f1f1f1;
 }
 
+.actionsCell {
+    white-space: nowrap;
+}
+
 .actionButton {
-    padding: 0.3rem 0.6rem;
+    padding: 0.4rem 0.8rem;
     margin-right: 0.5rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     color: white;
     font-size: 0.9rem;
-    text-decoration: none; /* Для Link */
-    display: inline-block; /* Для Link */
+    text-decoration: none;
+    display: inline-block;
+}
+.actionButton:last-child {
+    margin-right: 0;
 }
 
-.actionButton:nth-child(1) { /* Details/Edit button */
+.editButton {
     background-color: #007bff;
 }
-.actionButton:nth-child(1):hover {
+.editButton:hover {
     background-color: #0056b3;
 }
 
@@ -61,7 +90,110 @@
     background-color: #c82333;
 }
 
+.detailsButton {
+    background-color: #17a2b8;
+}
+.detailsButton:hover {
+    background-color: #138496;
+}
+
+.saveButton {
+    background-color: #5cc940;
+}
+
+.saveButton:hover {
+    background-color: #208d2f;
+}
+
+.cancelButton { /* Для модального вікна */
+    background-color: #6c757d;
+}
+.cancelButton:hover {
+    background-color: #545b62;
+}
+
+.nameLink {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+.nameLink:hover {
+    text-decoration: underline;
+}
+
 .error {
     color: red;
     text-align: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    border: 1px solid red;
+    background-color: #ffe0e0;
+    border-radius: 4px;
+}
+
+.warning { /* Для попереджень у формі */
+    display: block;
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    padding: .3rem .5rem;
+    margin-top: .25rem;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    font-size: 0.8em;
+}
+
+
+/* Modal Styles (можна винести в глобальні, якщо використовуються часто) */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 550px; /* Трохи ширше для теплиць */
+}
+
+.modalContent h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.formGroup input, .formGroup select {
+    width: 100%;
+    padding: 0.6rem; /* Трохи менше для кращого вигляду */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.modalActions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
