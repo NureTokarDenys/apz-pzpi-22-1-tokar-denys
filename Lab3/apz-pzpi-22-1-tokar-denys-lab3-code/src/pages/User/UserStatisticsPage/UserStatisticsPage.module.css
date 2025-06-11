@@ -1,0 +1,120 @@
+.statsPageContainer {
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.statsPageContainer h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+.statsPageContainer h3 {
+    color: #007bff;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.backLink {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.dateFilterContainer {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.dateFilterContainer label {
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+.dateFilterContainer input[type="date"] {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.dateFilterContainer button {
+    padding: 0.6rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.dateFilterContainer button:disabled {
+    background-color: #ccc;
+}
+.dateFilterContainer button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+
+.sensorStatBlock {
+    margin-bottom: 3rem;
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+.chartContainer {
+    height: 350px; /* Фіксована висота для графіка */
+    margin-bottom: 1.5rem;
+    position: relative; /* Для Chart.js */
+}
+
+.tableContainerSmall {
+    margin-top: 1rem;
+    max-height: 300px; /* Обмеження висоти таблиці */
+    overflow-y: auto; /* Скрол для таблиці */
+}
+.tableContainerSmall h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #444;
+}
+
+.dataTableSmall {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.dataTableSmall th, .dataTableSmall td {
+    border: 1px solid #eee;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+}
+
+.dataTableSmall th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.dataTableSmall tr:nth-child(even) {
+    background-color: #fdfdfd;
+}
+
+.inactiveSensorsNote {
+    margin-top: 1rem;
+    font-style: italic;
+    color: #666;
+}
+
+.error {
+    color: red;
+    text-align: center;
+}

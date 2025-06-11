@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const SensorData = require('../models/SensorData');
 const Sensor = require('../models/Sensor');
-const Greenhouse = require('../models/AutoGreenhouse');
 const { protect, authorizeAdmin } = require('../middleware/auth');
 const mongoose = require('mongoose');
 
@@ -31,12 +30,23 @@ async function getSensorDataMiddleware(req, res, next) {
 
 router.get('/', protect, authorizeAdmin, async (req, res) => {
     try {
-        const sensorData = await SensorData.find().populate({
-            path: 'sensorId',
-            select: 'model type greenhouseId',
-            populate: { path: 'greenhouseId', select: 'name' }
-        }).sort({timestamp: -1}).limit(1000); // Обмеження для адміна
-        res.json(sensorData);
+        const limit = parseInt(req.query.limit) || 100;
+        const page = parseInt(req.query.page) || 1;
+        const skip = (page - 1) * limit;
+
+        const sensorData = await SensorData.find()
+            .populate({
+                path: 'sensorId',
+                select: 'model type greenhouseId',
+                populate: { path: 'greenhouseId', select: 'name ownerId' }
+            })
+            .sort({timestamp: -1})
+            .skip(skip)
+            .limit(limit);
+        
+        const total = await SensorData.countDocuments();
+        res.json({data: sensorData, total, page, limit, totalPages: Math.ceil(total / limit) });
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -53,18 +63,34 @@ router.get('/sensor/:sensorId', protect, async (req, res) => {
         if (req.user.role !== 'admin' && sensor.greenhouseId.ownerId.toString() !== req.user.id.toString()) {
             return res.status(403).json({ message: 'User not authorized to access data for this sensor' });
         }
-        const limit = parseInt(req.query.limit) || 200; // Обмеження кількості записів
-        const page = parseInt(req.query.page) || 1;
-        const skip = (page - 1) * limit;
+        
+        const dateFilter = { sensorId: req.params.sensorId };
+        if (req.query.startDate) {
+            const startDate = new Date(req.query.startDate);
+            if (!isNaN(startDate)) {
+                dateFilter.timestamp = { ...dateFilter.timestamp, $gte: startDate };
+            } else {
+                return res.status(400).json({ message: 'Invalid startDate format.' });
+            }
+        }
+        if (req.query.endDate) {
+            let endDate = new Date(req.query.endDate);
+            if (!isNaN(endDate)) {
+                endDate = new Date(endDate.setHours(23, 59, 59, 999));
+                dateFilter.timestamp = { ...dateFilter.timestamp, $lte: endDate };
+            } else {
+                 return res.status(400).json({ message: 'Invalid endDate format.' });
+            }
+        }
 
-        const sensorData = await SensorData.find({ sensorId: req.params.sensorId })
-            .sort({timestamp: -1})
-            .skip(skip)
-            .limit(limit);
-        const total = await SensorData.countDocuments({ sensorId: req.params.sensorId });
-        res.json({data: sensorData, total, page, limit, totalPages: Math.ceil(total / limit) });
+        const sensorData = await SensorData.find(dateFilter)
+            .sort({timestamp: 1}); 
+        
+        res.json(sensorData); 
+
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error("Error fetching sensor data history:", err);
+        res.status(500).json({ message: 'Server error fetching sensor data history', details: err.message });
     }
 });
 

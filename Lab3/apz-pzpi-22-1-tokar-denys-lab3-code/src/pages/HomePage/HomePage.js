@@ -1,42 +1,52 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Додано useNavigate
 import { useAuth } from '../../hooks/useAuth';
 import styles from './HomePage.module.css';
 
 const HomePage = () => {
     const { currentUser, logout } = useAuth();
+    const navigate = useNavigate(); // Для перенаправлення
+
+    const handleLogout = () => {
+        logout();
+        navigate('/'); // Перенаправлення на головну після виходу
+    };
 
     return (
         <div className={styles.homeContainer}>
-            <h1>Welcome to the Autonomous Greenhouse System</h1>
-            <p>Monitor and manage your greenhouses efficiently.</p>
+            <h1>Ласкаво просимо до Системи Автономних Теплиць</h1>
+            <p>Ефективно відстежуйте та керуйте вашими теплицями.</p>
             
             {currentUser ? (
                 <div className={styles.userInfo}>
-                    <p>Hello, {currentUser.username}! ({currentUser.role})</p>
-                    <Link to="/dashboard" className={styles.dashboardLink}>Go to Dashboard</Link>
-                    <button onClick={logout} className={styles.logoutButton}>Logout</button>
+                    <p>Вітаю, {currentUser.username}! (Роль: {currentUser.role === 'admin' ? 'Адміністратор' : 'Користувач'})</p>
+                    {currentUser.role === 'user' && (
+                        <Link to="/my-greenhouses" className={styles.dashboardLink}>Мої Теплиці</Link>
+                    )}
+                    {currentUser.role === 'admin' && (
+                        <Link to="/admin/users" className={styles.dashboardLink}>Панель Адміністратора</Link>
+                    )}
+                    <button onClick={handleLogout} className={styles.logoutButton}>Вихід</button>
                 </div>
             ) : (
                 <div className={styles.authLinks}>
-                    <Link to="/login" className={styles.link}>Login</Link>
-                    <Link to="/register" className={styles.link}>Register</Link>
+                    <Link to="/login" className={styles.link}>Вхід</Link>
+                    <Link to="/register" className={styles.link}>Реєстрація</Link>
                 </div>
             )}
             
             <div className={styles.features}>
-                {/* Тут можна додати опис основних можливостей */}
                 <div className={styles.feature}>
-                    <h3>Real-time Monitoring</h3>
-                    <p>Keep an eye on your greenhouse conditions anytime, anywhere.</p>
+                    <h3>Моніторинг в Реальному Часі</h3>
+                    <p>Слідкуйте за умовами у вашій теплиці будь-коли та будь-де.</p>
                 </div>
                 <div className={styles.feature}>
-                    <h3>Automated Control</h3>
-                    <p>Set up rules for automatic climate adjustments.</p>
+                    <h3>Автоматизоване Керування</h3>
+                    <p>Налаштовуйте правила для автоматичного регулювання мікроклімату.</p>
                 </div>
                 <div className={styles.feature}>
-                    <h3>Data Analytics</h3>
-                    <p>Analyze historical data to optimize your growing strategies.</p>
+                    <h3>Аналіз Даних</h3>
+                    <p>Аналізуйте історичні дані для оптимізації стратегій вирощування.</p>
                 </div>
             </div>
         </div>

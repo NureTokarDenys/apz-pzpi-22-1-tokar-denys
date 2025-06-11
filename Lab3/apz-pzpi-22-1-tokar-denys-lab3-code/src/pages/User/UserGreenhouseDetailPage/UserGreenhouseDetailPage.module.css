@@ -1,0 +1,318 @@
+.detailPageContainer {
+    padding: 2rem;
+    max-width: 1300px;
+    margin: auto;
+}
+.headerActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.detailPageContainer h2 {
+    color: #333;
+    margin: 0;
+}
+
+.backButton, .actionButton { /* Загальний стиль для кнопок */
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+}
+.backButton {
+    margin-bottom: 1.5rem;
+}
+.backButton:hover, .actionButton:hover {
+    background-color: #5a6268;
+}
+/* Якщо будуть кнопки дій в заголовку для користувача */
+/* .actionButton { 
+    background-color: #007bff;
+}
+.actionButton:hover {
+    background-color: #0056b3;
+} */
+
+
+.ghInfo {
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.ghInfo p {
+    margin-bottom: 0.6rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+.ghInfo p strong {
+    color: #2c3e50;
+    min-width: 180px;
+    display: inline-block;
+}
+
+.sectionsContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.dataSection {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 0.5rem;
+}
+
+.dataSection h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    color: #007bff;
+}
+
+.addButtonSmall {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.addButtonSmall:hover {
+    background-color: #218838;
+}
+
+
+.itemList {
+    list-style: none;
+    padding: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 350px;
+}
+
+.itemList li {
+    padding: 0.7rem 0.2rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.itemList li:last-child {
+    border-bottom: none;
+}
+
+.sensorItem > div:first-child, .ruleItem > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex-grow: 1;
+    margin-right: 0.5rem;
+}
+
+
+.sensorType { font-weight: bold; }
+.sensorValue { font-weight: 500; }
+.sensorTimestamp { font-size: 0.8em; color: #777; }
+.defaultBadge {
+    font-size: 0.75em;
+    background-color: #6c757d;
+    color: white;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    margin-left: 0.5em;
+    font-weight: normal;
+}
+
+.itemActions {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.statusBadge {
+    padding: 0.2em 0.5em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: 500;
+    text-transform: capitalize;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+.activeBadge { background-color: #28a745; }
+.inactiveBadge { background-color: #6c757d; }
+.clickableBadge {
+    cursor: pointer;
+}
+.clickableBadge:hover {
+    opacity: 0.8;
+}
+
+.actionButtonSmall {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    color: white;
+}
+.editButton {
+    background-color: #007bff;
+}
+.editButton:hover {
+    background-color: #0056b3;
+}
+.deleteButton {
+    background-color: #dc3545;
+}
+.deleteButton:hover {
+    background-color: #c82333;
+}
+.deleteButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
+.logItem {
+    display: block;
+}
+.logTimestamp { color: #555; margin-right: 0.5em; font-size: 0.85em; }
+.logTypeBadge {
+    padding: 0.2em 0.5em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.7em;
+    margin-right: 0.5em;
+}
+.badgeInfo { background-color: #17a2b8; }
+.badgeAction { background-color: #007bff; }
+.badgeError { background-color: #dc3545; }
+.badgeWarning { background-color: #ffc107; color: #212529;}
+.logMessage { display: inline;}
+.logUser { font-size: 0.8em; color: #777; margin-left: 0.5em; }
+.log-error .logMessage { color: #dc3545; }
+
+
+.error {
+    color: red;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* Modal Styles (якщо ще не визначені глобально) */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modalContent h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="email"],
+.formGroup input[type="password"],
+.formGroup select {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.95rem;
+}
+.formGroup input:focus, .formGroup select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    outline: none;
+}
+
+
+.modalActions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.modalActions .actionButton {
+    padding: 0.6rem 1.2rem;
+}
+
+.saveButton {
+    background-color: #28a745;
+}
+.saveButton:hover {
+    background-color: #218838;
+}
+.cancelButton {
+    background-color: #6c757d;
+}
+.cancelButton:hover {
+    background-color: #545b62;
+}
+
+.modalContent .error {
+    font-size: 0.9em;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}

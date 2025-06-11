@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
-import DashboardPage from '../pages/DashboardPage';
 import AdminUsersPage from '../pages/Admin/AdminUsersPage';
 import AdminGreenhousesPage from '../pages/Admin/AdminGreenhousesPage'; 
 import AdminHardwareIdPage from '../pages/Admin/AdminHardwareIdPage'; 
@@ -11,6 +10,9 @@ import AdminGreenhouseDetailPage from '../pages/Admin/AdminGreenhouseDetailPage'
 import ProtectedRoute from './ProtectedRoute';
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
+import UserGreenhouseDetailPage from '../pages/User/UserGreenhouseDetailPage';
+import UserGreenhousesPage from '../pages/User/UserGreenhousesPage';
+import UserStatisticsPage from '../pages/User/UserStatisticsPage';
 
 const AppRoutes = () => {
     return (
@@ -24,7 +26,9 @@ const AppRoutes = () => {
                         <Route path="/register" element={<RegisterPage />} />
 
                         <Route element={<ProtectedRoute />}>
-                            <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/my-greenhouses" element={<UserGreenhousesPage />} />
+                            <Route path="/my-greenhouses/:greenhouseId" element={<UserGreenhouseDetailPage />} />
+                            <Route path="/my-greenhouses/:greenhouseId/statistics" element={<UserStatisticsPage />} />
                         </Route>
 
                         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

@@ -25,7 +25,7 @@ async function getAllowedHardwareEntry(req, res, next) {
 
 
 // GET /api/allowed-hardware - Отримати всі дозволені Hardware ID
-router.get('/', protect, authorizeAdmin, async (req, res) => {
+router.get('/', protect, async (req, res) => {
     try {
         const ids = await AllowedHardware.find().sort({ hardwareId: 1 });
         res.json(ids);

@@ -34,7 +34,7 @@ const Header = () => {
                         {currentUser.role === 'user' && (
                             <>
                                 <li>
-                                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
+                                    <NavLink to="/my-greenhouses" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
                                         Мої Теплиці
                                     </NavLink>
                                 </li>
