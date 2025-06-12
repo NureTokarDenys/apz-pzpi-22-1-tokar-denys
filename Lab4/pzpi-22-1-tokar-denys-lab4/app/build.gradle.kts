@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.apz_pzpi_22_1_tokar_denys_lab4_code"
+    namespace = "com.example.pzpi_22_1_tokar_denys_lab4"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.apz_pzpi_22_1_tokar_denys_lab4_code"
+        applicationId = "com.example.pzpi_22_1_tokar_denys_lab4"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

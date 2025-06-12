@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "apz-pzpi-22-1-tokar-denys-lab4-code"
+rootProject.name = "pzpi-22-1-tokar-denys-lab4"
 include(":app")
- 
