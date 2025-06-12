@@ -11,14 +11,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pzpi_22_1_tokar_denys_lab4.viewmodel.LoginUiState
 import com.example.pzpi_22_1_tokar_denys_lab4.viewmodel.LoginViewModel
-import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val loginState by loginViewModel.loginUiState.collectAsState() // Використовуйте collectAsStateWithLifecycle для кращої роботи з життєвим циклом
+    val loginState by loginViewModel.loginUiState.collectAsState()
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -27,12 +26,10 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
             is LoginUiState.Loading -> isLoading = true
             is LoginUiState.Success -> {
                 isLoading = false
-                // TODO: Зберегти токен та дані користувача
-                // Перехід на головний екран/дашборд
-                navController.navigate("dashboard") { // Або інший роут
-                    popUpTo("login") { inclusive = true } // Видаляємо екран логіну зі стеку
+                navController.navigate("dashboard") {
+                    popUpTo("login") { inclusive = true }
                 }
-                loginViewModel.resetState() // Скидаємо стан після успіху
+                loginViewModel.resetState()
             }
             is LoginUiState.Error -> {
                 isLoading = false
@@ -42,10 +39,9 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
         }
     }
 
-
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Login") })
+            TopAppBar(title = { Text("Вхід") })
         }
     ) { paddingValues ->
         Column(
@@ -56,13 +52,13 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Greenhouse Control", style = MaterialTheme.typography.headlineMedium)
+            Text("Керування Теплицею", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text("Ім'я користувача") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -70,7 +66,7 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text("Пароль") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true
@@ -82,24 +78,21 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
             } else {
                 Button(
                     onClick = {
-                        errorMessage = null // Скидаємо помилку перед новим запитом
+                        errorMessage = null
                         loginViewModel.login(username, password)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = username.isNotBlank() && password.isNotBlank()
                 ) {
-                    Text("Login")
+                    Text("Увійти")
                 }
             }
 
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(16.dp))
+                // Повідомлення про помилку залишаємо англійською,
+                // бо воно приходить з сервера, але можна додати свій обробник
                 Text(it, color = MaterialTheme.colorScheme.error)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = { navController.navigate("register") }) {
-                Text("Don't have an account? Register")
             }
         }
     }

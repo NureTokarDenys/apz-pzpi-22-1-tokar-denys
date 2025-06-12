@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,35 +22,28 @@ import com.example.pzpi_22_1_tokar_denys_lab4.viewmodel.GreenhouseListViewModel
 fun DashboardScreen(
     navController: NavController,
     greenhouseListViewModel: GreenhouseListViewModel = viewModel()
-    // TODO: Передати функцію для виходу з системи
 ) {
     val greenhouseListState by greenhouseListViewModel.greenhouseListState.collectAsState()
 
-    LaunchedEffect(Unit) { // Завантажити дані при першому запуску екрану
-        // TODO: Отримати токен для запиту
-        val token = "Bearer YOUR_SAVED_TOKEN" // Замініть на реальний токен
-        greenhouseListViewModel.fetchGreenhouses(token)
+    LaunchedEffect(Unit) {
+        greenhouseListViewModel.fetchGreenhouses()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Greenhouses") },
+                title = { Text("Мої Теплиці") },
                 actions = {
-                    // Кнопка виходу, якщо потрібно
-                    // IconButton(onClick = { /* TODO: logout action */ }) {
-                    //     Icon(Icons.Filled.Logout, contentDescription = "Logout")
-                    // }
+                    IconButton(onClick = {
+                        greenhouseListViewModel.logout()
+                        navController.navigate("login") {
+                            popUpTo("dashboard") { inclusive = true }
+                        }
+                    }) {
+                        Icon(Icons.Filled.Logout, contentDescription = "Вийти")
+                    }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                // TODO: Перехід на екран створення нової теплиці (якщо це є в моб. додатку)
-                // Або ця кнопка не потрібна, якщо створення лише через веб
-            }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Greenhouse")
-            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier
@@ -63,7 +56,7 @@ fun DashboardScreen(
                 is GreenhouseListState.Success -> {
                     if (state.greenhouses.isEmpty()) {
                         Text(
-                            "No greenhouses found. Add one via the web portal.",
+                            "Теплиць не знайдено. Додайте нову через веб-портал.",
                             modifier = Modifier.align(Alignment.Center).padding(16.dp)
                         )
                     } else {
@@ -82,14 +75,12 @@ fun DashboardScreen(
                 }
                 is GreenhouseListState.Error -> {
                     Text(
-                        "Error: ${state.message}",
+                        "Помилка: ${state.message}",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 }
-                GreenhouseListState.Idle -> {
-                    // Можна показати індикатор завантаження або нічого
-                }
+                GreenhouseListState.Idle -> { }
             }
         }
     }
@@ -107,7 +98,7 @@ fun GreenhouseItem(greenhouse: Greenhouse, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = greenhouse.name, style = MaterialTheme.typography.titleMedium)
             greenhouse.location?.let {
-                Text(text = it, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Розташування: $it", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

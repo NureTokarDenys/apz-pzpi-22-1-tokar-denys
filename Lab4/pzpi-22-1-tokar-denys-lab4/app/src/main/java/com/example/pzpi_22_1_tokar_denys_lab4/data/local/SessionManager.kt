@@ -5,15 +5,10 @@ import android.content.SharedPreferences
 import com.example.pzpi_22_1_tokar_denys_lab4.data.model.AuthResponse
 import com.google.gson.Gson
 
-
 class SessionManager(context: Context) {
     private var prefs: SharedPreferences =
         context.getSharedPreferences(Constants.PREFS_TOKEN_FILE, Context.MODE_PRIVATE)
     private val gson = Gson()
-
-    companion object {
-        // Можна реалізувати Singleton, якщо потрібно
-    }
 
     fun saveAuthToken(token: String) {
         val editor = prefs.edit()
@@ -25,7 +20,7 @@ class SessionManager(context: Context) {
         return prefs.getString(Constants.USER_TOKEN, null)
     }
 
-    fun saveUserDetails(authResponse: AuthResponse?) { // Зберігаємо весь об'єкт або потрібні поля
+    fun saveUserDetails(authResponse: AuthResponse?) {
         val editor = prefs.edit()
         val userJson = gson.toJson(authResponse)
         editor.putString(Constants.USER_DETAILS, userJson)
@@ -41,7 +36,7 @@ class SessionManager(context: Context) {
         }
     }
 
-    fun clearAuthToken() {
+    fun clearSession() {
         val editor = prefs.edit()
         editor.remove(Constants.USER_TOKEN)
         editor.remove(Constants.USER_DETAILS)

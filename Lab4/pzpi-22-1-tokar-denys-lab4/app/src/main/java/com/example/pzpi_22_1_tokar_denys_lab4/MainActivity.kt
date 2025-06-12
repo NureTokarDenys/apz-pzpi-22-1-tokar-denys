@@ -8,11 +8,13 @@ import androidx.compose.ui.Modifier
 import com.example.pzpi_22_1_tokar_denys_lab4.ui.theme.Pzpi221tokardenyslab4Theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.example.pzpi_22_1_tokar_denys_lab4.data.network.ApiClient
 import com.example.pzpi_22_1_tokar_denys_lab4.ui.navigation.AppNavigation
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ApiClient.initialize(this)
         setContent {
             Pzpi221tokardenyslab4Theme {
                 Surface(

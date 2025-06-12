@@ -1,7 +1,9 @@
 package com.example.pzpi_22_1_tokar_denys_lab4.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pzpi_22_1_tokar_denys_lab4.data.local.SessionManager
 import com.example.pzpi_22_1_tokar_denys_lab4.data.model.Greenhouse
 import com.example.pzpi_22_1_tokar_denys_lab4.data.repository.GreenhouseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,17 +18,18 @@ sealed class GreenhouseListState {
     data class Error(val message: String) : GreenhouseListState()
 }
 
-class GreenhouseListViewModel(
+class GreenhouseListViewModel(application: Application) : AndroidViewModel(application) {
+
     private val greenhouseRepository: GreenhouseRepository = GreenhouseRepository()
-) : ViewModel() {
+    private val sessionManager: SessionManager = SessionManager(application)
 
     private val _greenhouseListState = MutableStateFlow<GreenhouseListState>(GreenhouseListState.Idle)
     val greenhouseListState: StateFlow<GreenhouseListState> = _greenhouseListState.asStateFlow()
 
-    fun fetchGreenhouses(token: String) {
+    fun fetchGreenhouses() {
         viewModelScope.launch {
             _greenhouseListState.value = GreenhouseListState.Loading
-            val result = greenhouseRepository.getGreenhouses(token)
+            val result = greenhouseRepository.getGreenhouses()
             result.fold(
                 onSuccess = { greenhouses ->
                     _greenhouseListState.value = GreenhouseListState.Success(greenhouses)
@@ -36,5 +39,9 @@ class GreenhouseListViewModel(
                 }
             )
         }
+    }
+
+    fun logout() {
+        sessionManager.clearSession()
     }
 }

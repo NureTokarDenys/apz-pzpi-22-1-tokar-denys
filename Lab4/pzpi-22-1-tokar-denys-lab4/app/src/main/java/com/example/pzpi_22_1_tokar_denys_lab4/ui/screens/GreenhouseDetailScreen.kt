@@ -1,8 +1,10 @@
 package com.example.pzpi_22_1_tokar_denys_lab4.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -10,13 +12,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pzpi_22_1_tokar_denys_lab4.data.model.Rule
-import com.example.pzpi_22_1_tokar_denys_lab4.data.model.SensorValue
+import com.example.pzpi_22_1_tokar_denys_lab4.data.model.Sensor
+import com.example.pzpi_22_1_tokar_denys_lab4.data.model.Threshold
 import com.example.pzpi_22_1_tokar_denys_lab4.viewmodel.GreenhouseDetailState
 import com.example.pzpi_22_1_tokar_denys_lab4.viewmodel.GreenhouseDetailViewModel
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,18 +34,17 @@ fun GreenhouseDetailScreen(
     )
 ) {
     val detailState by detailViewModel.detailState.collectAsState()
-    var showRuleDialog by remember { mutableStateOf(false) }
+    var showEditRuleDialog by remember { mutableStateOf(false) }
     var selectedRuleToEdit by remember { mutableStateOf<Rule?>(null) }
 
     LaunchedEffect(greenhouseId) {
-        val token = "Bearer YOUR_SAVED_TOKEN" // Replace with actual token retrieval
-        detailViewModel.fetchGreenhouseDetails(token)
+        detailViewModel.fetchGreenhouseDetails()
     }
 
     val appBarTitle = when (val state = detailState) {
-        is GreenhouseDetailState.Success -> state.greenhouse?.name ?: "Greenhouse Details"
-        is GreenhouseDetailState.Error -> "Error"
-        else -> "Loading..."
+        is GreenhouseDetailState.Success -> state.greenhouse?.name ?: "Деталі Теплиці"
+        is GreenhouseDetailState.Error -> "Помилка"
+        else -> "Завантаження..."
     }
 
     Scaffold(
@@ -48,7 +53,7 @@ fun GreenhouseDetailScreen(
                 title = { Text(appBarTitle) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, "Back")
+                        Icon(Icons.Filled.ArrowBack, "Назад")
                     }
                 }
             )
@@ -64,8 +69,7 @@ fun GreenhouseDetailScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is GreenhouseDetailState.Success -> {
-                    val greenhouse = state.greenhouse
-                    val currentData = state.currentSensorData
+                    val sensors = state.sensors
                     val rules = state.rules
 
                     LazyColumn(
@@ -75,73 +79,84 @@ fun GreenhouseDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Text(greenhouse?.name ?: "Unknown Greenhouse", style = MaterialTheme.typography.headlineSmall)
-                            greenhouse?.location?.let { Text("Location: $it") }
+                            Text(state.greenhouse?.name ?: "Невідома Теплиця", style = MaterialTheme.typography.headlineSmall)
+                            state.greenhouse?.location?.let { Text("Розташування: $it") }
                         }
 
-                        item { Text("Current Sensor Data:", style = MaterialTheme.typography.titleMedium) }
-                        if (currentData.isEmpty()) {
-                            item { Text("No current sensor data available.") }
+                        item { Text("Поточні дані з датчиків:", style = MaterialTheme.typography.titleMedium) }
+                        if (sensors.isEmpty()) {
+                            item { Text("Датчики в цій теплиці не знайдені.") }
                         } else {
-                            items(currentData) { sensorValue ->
-                                SensorDataItem(sensorValue)
+                            items(sensors) { sensor ->
+                                SensorDataItem(
+                                    sensor = sensor,
+                                    onClick = {
+                                        val encodedUnit = URLEncoder.encode(sensor.unit, StandardCharsets.UTF_8.toString())
+                                        navController.navigate("sensorHistory/${sensor._id}/${sensor.type}/${sensor.model}/$encodedUnit")
+                                    }
+                                )
                             }
                         }
 
-                        item { Text("Automation Rules:", style = MaterialTheme.typography.titleMedium) }
+                        item { Text("Правила автоматизації:", style = MaterialTheme.typography.titleMedium) }
                         if (rules.isEmpty()) {
-                            item { Text("No rules configured.") }
+                            item { Text("Правила не налаштовані.") }
                         } else {
                             items(rules) { rule ->
                                 RuleItem(
                                     rule = rule,
                                     onStatusChange = { newStatus ->
-                                        detailViewModel.updateRuleStatus("Bearer YOUR_TOKEN", rule._id, newStatus)
+                                        detailViewModel.updateRuleStatus(rule._id, newStatus)
                                     },
                                     onEditClick = {
                                         selectedRuleToEdit = rule
-                                        showRuleDialog = true
+                                        showEditRuleDialog = true
                                     }
                                 )
                             }
                         }
                     }
+
+                    if (showEditRuleDialog && selectedRuleToEdit != null) {
+                        EditRuleDialog(
+                            rule = selectedRuleToEdit!!,
+                            sensors = sensors,
+                            onDismiss = { showEditRuleDialog = false },
+                            onSave = { updatedRule ->
+                                detailViewModel.updateRule(updatedRule)
+                                showEditRuleDialog = false
+                            }
+                        )
+                    }
                 }
                 is GreenhouseDetailState.Error -> {
                     Text(
-                        "Error: ${state.message}",
+                        "Помилка: ${state.message}",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp)
                     )
                 }
-                GreenhouseDetailState.Idle -> {
-                    // You can show an initial placeholder or nothing
-                }
+                GreenhouseDetailState.Idle -> { }
             }
         }
     }
-
-    if (showRuleDialog && selectedRuleToEdit != null) {
-        AlertDialog(
-            onDismissRequest = { showRuleDialog = false },
-            title = { Text("Edit Rule (Placeholder)") },
-            text = { Text("Rule editing for '${selectedRuleToEdit!!.action}' is not yet implemented.") },
-            confirmButton = { Button(onClick = { showRuleDialog = false }) { Text("OK") } }
-        )
-    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SensorDataItem(sensorValue: SensorValue) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(8.dp)) {
+fun SensorDataItem(sensor: Sensor, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
             Text(
-                "${sensorValue.type} (${sensorValue.model}): ${sensorValue.value ?: "N/A"} ${sensorValue.unit}",
+                "${sensor.type} (${sensor.model}): ${sensor.lastValue ?: "Немає даних"} ${sensor.unit}",
                 style = MaterialTheme.typography.bodyLarge
             )
-            sensorValue.lastUpdated?.let { Text("Last updated: $it", style = MaterialTheme.typography.bodySmall) }
+            sensor.lastUpdated?.let { Text("Останнє оновлення: $it", style = MaterialTheme.typography.bodySmall) }
         }
     }
 }
@@ -157,8 +172,8 @@ fun RuleItem(rule: Rule, onStatusChange: (String) -> Unit, onEditClick: () -> Un
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Action: ${rule.action}", style = MaterialTheme.typography.titleSmall)
-                Text("Condition: ${rule.threshold.sensorModelId} ${rule.threshold.operator} ${rule.threshold.value}", style = MaterialTheme.typography.bodyMedium)
+                Text("Дія: ${rule.action}", style = MaterialTheme.typography.titleSmall)
+                Text("Умова: ${rule.threshold.sensorModelId} ${rule.threshold.operator} ${rule.threshold.value}", style = MaterialTheme.typography.bodyMedium)
             }
             Switch(
                 checked = rule.status == "active",
@@ -167,8 +182,137 @@ fun RuleItem(rule: Rule, onStatusChange: (String) -> Unit, onEditClick: () -> Un
                 }
             )
             IconButton(onClick = onEditClick) {
-                Icon(Icons.Filled.Edit, contentDescription = "Edit Rule")
+                Icon(Icons.Filled.Edit, contentDescription = "Редагувати Правило")
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditRuleDialog(
+    rule: Rule,
+    sensors: List<Sensor>,
+    onDismiss: () -> Unit,
+    onSave: (Rule) -> Unit
+) {
+    val actionMap = mapOf(
+        "turn_on_light" to "Увімкнути світло",
+        "turn_off_light" to "Вимкнути світло",
+        "turn_on_fan" to "Увімкнути вентилятор",
+        "turn_off_fan" to "Вимкнути вентилятор",
+        "turn_on_watering" to "Увімкнути полив",
+        "turn_off_watering" to "Вимкнути полив"
+    )
+    val operatorMap = mapOf(
+        ">" to "Більше (>)",
+        "<" to "Менше (<)",
+        "==" to "Дорівнює (==)"
+    )
+
+    var selectedAction by remember { mutableStateOf(rule.action) }
+    var selectedSensorModel by remember { mutableStateOf(rule.threshold.sensorModelId) }
+    var selectedOperator by remember { mutableStateOf(rule.threshold.operator) }
+    var thresholdValue by remember { mutableStateOf(rule.threshold.value.toString()) }
+
+    var isActionExpanded by remember { mutableStateOf(false) }
+    var isSensorExpanded by remember { mutableStateOf(false) }
+    var isOperatorExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Редагувати правило") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExposedDropdownMenuBox(expanded = isActionExpanded, onExpandedChange = { isActionExpanded = it }) {
+                    OutlinedTextField(
+                        value = actionMap[selectedAction] ?: selectedAction,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Дія") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isActionExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = isActionExpanded, onDismissRequest = { isActionExpanded = false }) {
+                        actionMap.forEach { (key, value) ->
+                            DropdownMenuItem(text = { Text(value) }, onClick = {
+                                selectedAction = key
+                                isActionExpanded = false
+                            })
+                        }
+                    }
+                }
+
+                ExposedDropdownMenuBox(expanded = isSensorExpanded, onExpandedChange = { isSensorExpanded = it }) {
+                    OutlinedTextField(
+                        value = selectedSensorModel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Датчик (Модель)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isSensorExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = isSensorExpanded, onDismissRequest = { isSensorExpanded = false }) {
+                        sensors.forEach { sensor ->
+                            DropdownMenuItem(text = { Text("${sensor.type} (${sensor.model})") }, onClick = {
+                                selectedSensorModel = sensor.model
+                                isSensorExpanded = false
+                            })
+                        }
+                    }
+                }
+
+                ExposedDropdownMenuBox(expanded = isOperatorExpanded, onExpandedChange = { isOperatorExpanded = it }) {
+                    OutlinedTextField(
+                        value = operatorMap[selectedOperator] ?: selectedOperator,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Оператор") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isOperatorExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = isOperatorExpanded, onDismissRequest = { isOperatorExpanded = false }) {
+                        operatorMap.forEach { (key, value) ->
+                            DropdownMenuItem(text = { Text(value) }, onClick = {
+                                selectedOperator = key
+                                isOperatorExpanded = false
+                            })
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = thresholdValue,
+                    onValueChange = { thresholdValue = it },
+                    label = { Text("Значення") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val updatedThreshold = Threshold(
+                        sensorModelId = selectedSensorModel,
+                        operator = selectedOperator,
+                        value = thresholdValue.toDoubleOrNull() ?: rule.threshold.value
+                    )
+                    val updatedRule = rule.copy(
+                        action = selectedAction,
+                        threshold = updatedThreshold
+                    )
+                    onSave(updatedRule)
+                },
+                enabled = thresholdValue.toDoubleOrNull() != null
+            ) {
+                Text("Зберегти")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Скасувати")
+            }
+        }
+    )
 }
