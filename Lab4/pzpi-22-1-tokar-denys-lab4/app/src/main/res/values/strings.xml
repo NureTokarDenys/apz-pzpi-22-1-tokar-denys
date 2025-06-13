@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">pzpi-22-1-tokar-denys-lab4</string>
+    <string name="default_notification_channel_id">greenhouse_channel_id</string>
 </resources>

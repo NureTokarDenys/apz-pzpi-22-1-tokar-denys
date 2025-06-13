@@ -49,13 +49,16 @@ interface ApiService {
         @Path("greenhouseId") greenhouseId: String,
         @Body manualActionRequest: ManualActionRequest
     ): Response<Unit>
+
+    @POST("users/fcm-token")
+    suspend fun sendFcmToken(@Body fcmTokenRequest: FcmTokenRequest): Response<Unit>
 }
 
 data class LoginRequest(val username: String, val password: String)
 data class StatusUpdateRequest(val status: String)
 data class ManualActionRequest(val action: String, val deviceId: String? = null, val value: Any? = null)
+data class FcmTokenRequest(val fcmToken: String)
 
-// Новий data class для тіла запиту на оновлення правила
 data class RuleUpdateRequest(
     val action: String,
     val threshold: Threshold

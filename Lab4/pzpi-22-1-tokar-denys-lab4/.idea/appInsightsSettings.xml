@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.pzpi_22_1_tokar_denys_lab4" />
+                  <option name="mobileSdkAppId" value="1:788418981920:android:b7d42dfae35120df7b8c45" />
+                  <option name="projectId" value="greenhouse-push-notification" />
+                  <option name="projectNumber" value="788418981920" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -66,18 +67,22 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     // Navigation Compose
-    implementation("androidx.navigation:navigation-compose:2.7.7") // Перевірте останню версію
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // ViewModel and LiveData (або StateFlow для Compose)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0") // Для collectAsStateWithLifecycle
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
     // Retrofit for Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0") // Або Moshi, Kotlinx Serialization
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // Для логування запитів
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-analytics")
 }

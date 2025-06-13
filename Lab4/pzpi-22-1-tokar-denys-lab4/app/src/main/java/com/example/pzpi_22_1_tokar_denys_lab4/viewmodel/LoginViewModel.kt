@@ -6,10 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.pzpi_22_1_tokar_denys_lab4.data.local.SessionManager
 import com.example.pzpi_22_1_tokar_denys_lab4.data.model.AuthResponse
 import com.example.pzpi_22_1_tokar_denys_lab4.data.repository.AuthRepository
+import com.example.pzpi_22_1_tokar_denys_lab4.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 
 sealed class LoginUiState {
     object Idle : LoginUiState()
@@ -21,6 +24,7 @@ sealed class LoginUiState {
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val authRepository: AuthRepository = AuthRepository()
     private val sessionManager: SessionManager = SessionManager(application)
+    private val userRepository: UserRepository = UserRepository()
 
     private val _loginUiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val loginUiState: StateFlow<LoginUiState> = _loginUiState.asStateFlow()
@@ -33,6 +37,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 onSuccess = { authResponse ->
                     sessionManager.saveAuthToken(authResponse.token)
                     sessionManager.saveUserDetails(authResponse)
+
+                    try {
+                        val fcmToken = FirebaseMessaging.getInstance().token.await()
+                        userRepository.sendFcmToken(fcmToken)
+                    } catch (e: Exception) {
+
+                    }
+
                     _loginUiState.value = LoginUiState.Success(authResponse)
                 },
                 onFailure = { exception ->
