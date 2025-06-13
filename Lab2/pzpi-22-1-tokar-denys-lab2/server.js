@@ -10,6 +10,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const admin = require('firebase-admin');
+const serviceAccount = require('./greenhouse-push-notification-firebase-adminsdk-fbsvc-9e8f3f9817.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

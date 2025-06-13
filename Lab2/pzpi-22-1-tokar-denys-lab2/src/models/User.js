@@ -18,7 +18,8 @@ const UserSchema = new Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
-    }
+    },
+    fcmToken: { type: String }
 }, { timestamps: true });
 
 UserSchema.pre('save', async function(next) {

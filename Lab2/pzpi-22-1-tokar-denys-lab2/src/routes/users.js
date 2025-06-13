@@ -184,4 +184,17 @@ router.delete('/:id', protect, getUserMiddleware, async (req, res) => {
   }
 });
 
+router.post('/fcm-token', protect, async (req, res) => {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+        return res.status(400).json({ message: 'FCM token is required.' });
+    }
+    try {
+        await User.findByIdAndUpdate(req.user.id, { fcmToken: fcmToken });
+        res.status(200).json({ message: 'FCM token updated successfully.' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error updating FCM token', details: err.message });
+    }
+});
+
 module.exports = router;

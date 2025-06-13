@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const admin = require('firebase-admin');
 const SensorData = require('../models/SensorData');
 const Sensor = require('../models/Sensor');
 const Rule = require('../models/Rule');
-const Greenhouse = require('../models/AutoGreenhouse');
+const Greenhouse = require('../models/AutoGreenhouse'); 
 const Log = require('../models/Log');
 
 router.post('/telemetry', async (req, res) => {
@@ -15,7 +16,8 @@ router.post('/telemetry', async (req, res) => {
 
     let greenhouse;
     try {
-        greenhouse = await Greenhouse.findOne({ hardwareId: hardwareId });
+        greenhouse = await Greenhouse.findOne({ hardwareId: hardwareId }).populate('ownerId');
+        
         if (!greenhouse) {
              await new Log({
                 greenhouseId: null,
@@ -83,11 +85,43 @@ router.post('/telemetry', async (req, res) => {
                     action: rule.action,
                     ruleId: rule._id.toString()
                 });
+                
+                const logMessage = `Правило спрацювало: Якщо ${currentSensorValues[rule.threshold.sensorModelId].type} ${rule.threshold.operator} ${rule.threshold.value}, то виконати "${rule.action}". Поточне значення: ${currentSensorValues[rule.threshold.sensorModelId].value}.`;
+                
                 await new Log({
                     greenhouseId: greenhouse._id,
                     type: 'action',
-                    message: `Rule '${rule._id}' (sensor ${rule.threshold.sensorModelId} ${rule.threshold.operator} ${rule.threshold.value} -> ${rule.action}) triggered. Sending command.`
+                    message: `${logMessage} Надсилання команди.`
                 }).save();
+
+                if (greenhouse.ownerId && greenhouse.ownerId.fcmToken) {
+                    const fcmMessage = {
+                        notification: {
+                            title: `Теплиця: "${greenhouse.name}"`,
+                            body: logMessage
+                        },
+                        token: greenhouse.ownerId.fcmToken
+                    };
+
+                    try {
+                        const response = await admin.messaging().send(fcmMessage);
+                        console.log('Successfully sent FCM message:', response);
+                        await new Log({
+                            greenhouseId: greenhouse._id,
+                            type: 'info',
+                            message: `Push-сповіщення успішно надіслано користувачу ${greenhouse.ownerId.username}.`
+                        }).save();
+                    } catch (error) {
+                        console.error('Error sending FCM message:', error);
+                        await new Log({
+                            greenhouseId: greenhouse._id,
+                            type: 'error',
+                            message: `Помилка надсилання push-сповіщення користувачу ${greenhouse.ownerId.username}: ${error.message}`
+                        }).save();
+                    }
+                } else {
+                    console.log(`User ${greenhouse.ownerId.username} does not have an FCM token.`);
+                }
             }
         }
         res.status(200).json({ commands: commandsToSend });
