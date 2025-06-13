@@ -1,0 +1,149 @@
+﻿Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+ЗВІТ
+з лабораторної роботи №4 
+з дисципліни "Архітектура програмного забезпечення"
+на тему: "Розробка мобільного застосунку"
+
+
+
+
+Виконав 
+ст. гр. ПЗПІ-22-1
+Токар Денис Юрійович
+
+
+Перевірив
+ст. викладач катедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+Харків 2025 р.
+1 Історія змін
+№	Дата      	Версія звіту	Опис змін та виправлень
+1	13.06.2025	0.1	Створення і заповнення
+
+
+2 ЗАВДАННЯ
+Розробити мобільний додаток для мобільної платформи, що є клієнтською частиною програмної системи моніторингу та керування теплицями.
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Для створення мобільного клієнта програмної системи для Android було застосовано мову програмування Kotlin та декларативний підхід до побудови інтерфейсу за допомогою Jetpack Compose. Такий вибір забезпечує високу швидкість розробки та сучасний користувацький досвід на платформі Android. Архітектурною основою проєкту є патерн MVVM (Model-View-ViewModel), що дозволяє чітко розмежувати логіку представлення, керування станом та взаємодію з даними.
+Ключовим функціоналом мобільного додатку є автентифікація користувача за допомогою Bearer токенів, перегляд списку закріплених теплиць, моніторинг поточних показників з датчиків, а також налаштування правил автоматизації. Окрему увагу було приділено реалізації push-сповіщень через Firebase Cloud Messaging (FCM) для миттєвого інформування користувача про спрацювання правил на сервері.
+В додатку А представлено посилання на відео демонстрацію функціоналу мобільного додатку, у додатку Б заходяться діаграми пов'язані з мобільною частиною, в додатку В наведено приклад коду для реалізації push-сповіщень.
+
+4 ВИСНОВКИ
+У ході виконання лабораторної роботи було розроблено функціональний мобільний додаток для платформи Android, що вирішує поставлені завдання. Було успішно реалізовано механізми взаємодії з REST API, керування станом за допомогою StateFlow та ViewModel, а також інтегрування сервісу push-сповіщень Firebase. Створений додаток надає користувачам зручний інтерфейс для моніторингу та управління теплицями в реальному часі.
+
+Додаток А(посилання на відеозапис доповіді та текст хронологічного опису доповіді)
+Відеозапис доповіді на YouTube: https://youtu.be/8O_ToaGMH9Y
+Текст Хронологічного опису:
+00:00 Представлення та вступ до демонстрації мобільного застосунку
+00:31 Технологічний стек: Kotlin, Jetpack Compose та архітектурний паттерн MVVM
+01:02 Ключовий функціонал та Firebase Cloud Messaging для пуш-повідомлень
+01:33 Огляд розроблених діаграм: прецедентів, компонентів та станів
+01:35 Запуск додатку та процес авторизації користувача
+01:51 Дозвіл на отримання повідомлень та перегляд списку теплиць
+02:04 Моніторинг датчиків: поточні значення та детальна статистика
+02:34 Управління правилами автоматизації: швидке вмикання/вимикання та редагування
+02:43 Демонстрація пуш-повідомлень: тестування через ендпойнт
+03:00 Отримання та перегляд повідомлення про спрацювання правила
+03:17 Завершення демонстрації та подяка за увагу
+
+
+Додаток Б(діаграми)
+
+Рисунок Б.1 – Діаграма прецедентів (use case diagram).
+
+Рисунок Б.2 – Діаграма компонентів (component diagram).
+
+
+Рисунок Б.3 – Діаграма станів (state diagram).
+Додаток В(фрагменти коду, що відповідають за логіку роботи push-сповіщень)
+MyFirebaseMessagingService.kt(mobile):
+
+class MyFirebaseMessagingService : FirebaseMessagingService() {
+
+    private val userRepository = UserRepository()
+
+    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        Log.d("FCM", "From: ${remoteMessage.from}")
+
+        remoteMessage.notification?.let {
+            Log.d("FCM", "Message Notification Body: ${it.body}")
+            sendNotification(it.title, it.body)
+        }
+    }
+
+    override fun onNewToken(token: String) {
+        Log.d("FCM", "Refreshed token: $token")
+        sendTokenToServer(token)
+    }
+
+    private fun sendTokenToServer(token: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            userRepository.sendFcmToken(token)
+        }
+    }
+
+    private fun sendNotification(title: String?, messageBody: String?) {
+        val channelId = "greenhouse_channel_id"
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title ?: "Сповіщення від теплиці")
+            .setContentText(messageBody)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Сповіщення Теплиці",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        notificationManager.notify(0, notificationBuilder.build())
+    }
+}
+
+
+iot.js(backend):
+   if (greenhouse.ownerId && greenhouse.ownerId.fcmToken) {
+                    const fcmMessage = {
+                        notification: {
+                            title: `Теплиця: "${greenhouse.name}"`,
+                            body: logMessage
+                        },
+                        token: greenhouse.ownerId.fcmToken
+                    };
+
+                    try {
+                        const response = await admin.messaging().send(fcmMessage);
+                        console.log('Successfully sent FCM message:', response);
+                        await new Log({
+                            greenhouseId: greenhouse._id,
+                            type: 'info',
+                            message: `Push-сповіщення успішно надіслано користувачу ${greenhouse.ownerId.username}.`
+                        }).save();
+                    } catch (error) {
+                        console.error('Error sending FCM message:', error);
+                        await new Log({
+                            greenhouseId: greenhouse._id,
+                            type: 'error',
+                            message: `Помилка надсилання push-сповіщення користувачу ${greenhouse.ownerId.username}: ${error.message}`
+                        }).save();
+                    }
+                } else {
+                    console.log(`User ${greenhouse.ownerId.username} does not have an FCM token.`);
+                }
+
